@@ -1,0 +1,52 @@
+{
+  "name": "telegram-trading-bot",
+  "version": "1.0.0",
+  "description": "Advanced Trading Assistant Telegram Bot",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "nodemon",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "migrate": "knex migrate:latest",
+    "migrate:rollback": "knex migrate:rollback",
+    "lint": "eslint src --ext .ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.57",
+    "axios": "^1.7.9",
+    "bullmq": "^5.45.0",
+    "cheerio": "^1.2.0",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^16.4.7",
+    "grammy": "^1.31.0",
+    "ioredis": "^5.4.2",
+    "knex": "^3.1.0",
+    "luxon": "^3.5.0",
+    "natural": "^8.0.1",
+    "node-cron": "^3.0.3",
+    "p-retry": "^6.2.1",
+    "pg": "^8.13.3",
+    "playwright": "^1.59.1",
+    "rss-parser": "^3.13.0",
+    "sentiment": "^5.0.2",
+    "technicalindicators": "^3.1.0",
+    "user-agents": "^2.1.41",
+    "winston": "^3.17.0",
+    "ws": "^8.18.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/luxon": "^3.4.2",
+    "@types/node": "^22.10.7",
+    "@types/pg": "^8.11.11",
+    "@types/user-agents": "^1.0.4",
+    "@types/ws": "^8.5.13",
+    "jest": "^30.3.0",
+    "nodemon": "^3.1.14",
+    "ts-jest": "^29.4.9",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.7.3"
+  }
+}

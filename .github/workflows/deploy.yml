@@ -1,0 +1,36 @@
+name: Deploy to Local Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: |
+          docker build -t bot-suggest-market .
+
+      - name: Stop and Remove Old Container
+        run: |
+          docker stop bot-suggest-market-container || true
+          docker rm bot-suggest-market-container || true
+
+      - name: Run New Container
+        run: |
+          docker run -d \
+            --name bot-suggest-market-container \
+            --env-file .env \
+            --restart unless-stopped \
+            -p 3000:3000 \
+            bot-suggest-market
+
+      - name: Clean up unused Docker images
+        run: |
+          docker image prune -f
