@@ -40,6 +40,7 @@
     "@types/luxon": "^3.4.2",
     "@types/node": "^22.10.7",
     "@types/pg": "^8.11.11",
+    "@types/sentiment": "^5.0.4",
     "@types/user-agents": "^1.0.4",
     "@types/ws": "^8.5.13",
     "jest": "^30.3.0",
