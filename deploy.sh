@@ -27,6 +27,8 @@ npm run migrate
 echo "♻️ Me-restart bot di PM2..."
 pm2 restart trading-bot
 
+pm2 logs trading-bot
+
 echo "--------------------------------------"
 echo "✅ Update selesai! Bot sudah berjalan."
 echo "--------------------------------------"
