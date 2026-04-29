@@ -60,10 +60,7 @@ export async function handlePredict(ctx: CommandContext<Context>): Promise<void>
     const message = formatSignal(signal);
     const tvLink = ChartService.getTradingViewLink(symbol);
 
-    // Delete loading message
-    await ctx.api.deleteMessage(ctx.chat!.id, loadingMsg.message_id).catch(() => {});
-
-    // Send chart image + message
+    // Send result first
     if (chartBuffer) {
       await ctx.replyWithPhoto(new InputFile(chartBuffer, `${symbol}_chart.png`), {
         caption: message + `\n\n📊 <a href="${tvLink}">View on TradingView</a>`,
@@ -76,14 +73,23 @@ export async function handlePredict(ctx: CommandContext<Context>): Promise<void>
       );
     }
 
+    // THEN delete loading message only after success
+    await ctx.api.deleteMessage(ctx.chat!.id, loadingMsg.message_id).catch(() => {});
+
     log.info('Predict command completed', { userId, symbol, trend: signal.trend, confidence: signal.confidence });
   } catch (err) {
-    await ctx.api.editMessageText(
-      ctx.chat!.id,
-      loadingMsg.message_id,
-      `Failed to analyze <b>${symbol}</b>: ${(err as Error).message}\n\nPlease verify the symbol and try again.`,
-      { parse_mode: 'HTML' }
-    );
+    // Only try to edit if the message likely still exists
+    try {
+      await ctx.api.editMessageText(
+        ctx.chat!.id,
+        loadingMsg.message_id,
+        `Failed to analyze <b>${symbol}</b>: ${(err as Error).message}\n\nPlease verify the symbol and try again.`,
+        { parse_mode: 'HTML' }
+      );
+    } catch {
+      // If edit fails (e.g. message already deleted), just send a new message
+      await ctx.reply(`Failed to analyze <b>${symbol}</b>: ${(err as Error).message}`);
+    }
     log.error('Predict command failed', { userId, symbol, error: (err as Error).message });
   }
 }
