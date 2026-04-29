@@ -163,7 +163,8 @@ export interface SignalResult {
   reasoning: string[];
   invalidationConditions: string[];
   stopLoss: number | null;
-  takeProfit: number | null;
+  takeProfit: number | null; // Primary TP
+  takeProfits: number[];      // Multiple TP layers
   riskRewardRatio: number | null;
   positionSizeAdvice: string;
   chartBuffer?: Buffer;

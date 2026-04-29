@@ -295,36 +295,46 @@ export class SignalEngine {
     ind: IndicatorResult,
     bias: TradeBias,
     riskProfile: RiskProfile
-  ): { stopLoss: number | null; takeProfit: number | null; riskRewardRatio: number | null; positionSizeAdvice: string } {
+  ): { stopLoss: number | null; takeProfit: number | null; takeProfits: number[]; riskRewardRatio: number | null; positionSizeAdvice: string } {
     if (bias === 'wait') {
-      return { stopLoss: null, takeProfit: null, riskRewardRatio: null, positionSizeAdvice: 'No trade — wait for clearer signal' };
+      return { stopLoss: null, takeProfit: null, takeProfits: [], riskRewardRatio: null, positionSizeAdvice: 'No trade — wait for clearer signal' };
     }
 
     // Risk % per trade based on profile
     const riskPct = { conservative: 0.01, moderate: 0.02, aggressive: 0.03 }[riskProfile];
-    const rewardMultiplier = { conservative: 2.0, moderate: 2.5, aggressive: 3.0 }[riskProfile];
-
+    
     let stopLoss: number;
-    let takeProfit: number;
+    let takeProfits: number[] = [];
 
     if (bias === 'long') {
       // Stop loss: below support or 2% below current price
-      const supportStop = ind.supportLevel ? ind.supportLevel * 0.99 : price * (1 - riskPct * 2);
+      const supportStop = ind.supportLevel ? ind.supportLevel * 0.995 : price * (1 - riskPct * 2);
       stopLoss = Math.min(supportStop, price * (1 - riskPct * 2));
 
       const riskAmount = price - stopLoss;
-      takeProfit = price + riskAmount * rewardMultiplier;
+      // Multi-layer TP
+      takeProfits = [
+        price + riskAmount * 1.5, // TP1
+        price + riskAmount * 3.0, // TP2
+        price + riskAmount * 5.0  // TP3
+      ];
     } else {
       // Short: stop above resistance or 2% above current price
-      const resistanceStop = ind.resistanceLevel ? ind.resistanceLevel * 1.01 : price * (1 + riskPct * 2);
+      const resistanceStop = ind.resistanceLevel ? ind.resistanceLevel * 1.005 : price * (1 + riskPct * 2);
       stopLoss = Math.max(resistanceStop, price * (1 + riskPct * 2));
 
       const riskAmount = stopLoss - price;
-      takeProfit = price - riskAmount * rewardMultiplier;
+      // Multi-layer TP
+      takeProfits = [
+        price - riskAmount * 1.5, // TP1
+        price - riskAmount * 3.0, // TP2
+        price - riskAmount * 5.0  // TP3
+      ];
     }
 
     const risk = Math.abs(price - stopLoss);
-    const reward = Math.abs(takeProfit - price);
+    const primaryTp = takeProfits[1]; // Use TP2 as primary for ratio calculation
+    const reward = Math.abs(primaryTp - price);
     const riskRewardRatio = risk > 0 ? parseFloat((reward / risk).toFixed(2)) : null;
 
     const positionPct = { conservative: '1–2%', moderate: '2–5%', aggressive: '5–10%' }[riskProfile];
@@ -332,7 +342,8 @@ export class SignalEngine {
 
     return {
       stopLoss: parseFloat(stopLoss.toFixed(8)),
-      takeProfit: parseFloat(takeProfit.toFixed(8)),
+      takeProfit: parseFloat(primaryTp.toFixed(8)),
+      takeProfits: takeProfits.map(tp => parseFloat(tp.toFixed(8))),
       riskRewardRatio,
       positionSizeAdvice,
     };
@@ -387,7 +398,7 @@ export class SignalEngine {
       fundamentalRating: null, newsSentiment: null, newsItems: [],
       reasoning: ['Insufficient data for analysis. Try again shortly.'],
       invalidationConditions: [],
-      stopLoss: null, takeProfit: null, riskRewardRatio: null,
+      stopLoss: null, takeProfit: null, takeProfits: [], riskRewardRatio: null,
       positionSizeAdvice: 'No trade recommended — insufficient data',
       timeframe: '1d', timestamp: Date.now(),
     };

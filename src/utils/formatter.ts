@@ -77,7 +77,7 @@ export function formatSignal(signal: SignalResult): string {
     '',
     `<b>Price:</b> ${formatPrice(signal.price, signal.symbol)}`,
     `<b>Trend:</b> ${trendEmoji} ${signal.trend}`,
-    `<b>Confidence:</b> ${signal.confidence.toFixed(0)}%`,
+    `<b>Confidence:</b> ${(signal.confidence ?? 0).toFixed(0)}%`,
     `<b>Signal Score:</b> ${signal.signalScore >= 0 ? '+' : ''}${signal.signalScore}`,
     `<b>Trade Bias:</b> ${biasEmoji} ${signal.tradeBias.charAt(0).toUpperCase() + signal.tradeBias.slice(1)}`,
     '',
@@ -85,17 +85,17 @@ export function formatSignal(signal: SignalResult): string {
   ];
 
   const ind = signal.indicators;
-  if (ind.rsi !== null) lines.push(`• RSI(14): ${ind.rsi.toFixed(1)} ${getRsiLabel(ind.rsi)}`);
-  if (ind.macdLine !== null && ind.macdSignal !== null) {
+  if (ind.rsi != null) lines.push(`• RSI(14): ${ind.rsi.toFixed(1)} ${getRsiLabel(ind.rsi)}`);
+  if (ind.macdLine != null && ind.macdSignal != null) {
     const macdLabel = ind.macdLine > ind.macdSignal ? '↑ Bullish crossover' : '↓ Bearish crossover';
     lines.push(`• MACD: ${macdLabel}`);
   }
-  if (ind.ma50 !== null) lines.push(`• MA50: ${formatPrice(ind.ma50, signal.symbol)} ${signal.price > ind.ma50 ? '(Price above ✓)' : '(Price below ✗)'}`);
-  if (ind.ma200 !== null) lines.push(`• MA200: ${formatPrice(ind.ma200, signal.symbol)} ${ind.ma200 < signal.price ? '(Price above ✓)' : '(Price below ✕)'}`);
-  if (ind.dema20 !== null) lines.push(`• DEMA(20): ${formatPrice(ind.dema20, signal.symbol)} ${ind.dema20 < signal.price ? '(Bullish ✓)' : '(Bearish ✕)'}`);
-  if (ind.bbUpper !== null && ind.bbLower !== null) lines.push(`• BB Range: ${formatPrice(ind.bbLower, signal.symbol)} – ${formatPrice(ind.bbUpper, signal.symbol)}`);
-  if (ind.supportLevel !== null) lines.push(`• Support: ${formatPrice(ind.supportLevel, signal.symbol)}`);
-  if (ind.resistanceLevel !== null) lines.push(`• Resistance: ${formatPrice(ind.resistanceLevel, signal.symbol)}`);
+  if (ind.ma50 != null) lines.push(`• MA50: ${formatPrice(ind.ma50, signal.symbol)} ${signal.price > ind.ma50 ? '(Price above ✓)' : '(Price below ✗)'}`);
+  if (ind.ma200 != null) lines.push(`• MA200: ${formatPrice(ind.ma200, signal.symbol)} ${ind.ma200 < signal.price ? '(Price above ✓)' : '(Price below ✕)'}`);
+  if (ind.dema20 != null) lines.push(`• DEMA(20): ${formatPrice(ind.dema20, signal.symbol)} ${ind.dema20 < signal.price ? '(Bullish ✓)' : '(Bearish ✕)'}`);
+  if (ind.bbUpper != null && ind.bbLower != null) lines.push(`• BB Range: ${formatPrice(ind.bbLower, signal.symbol)} – ${formatPrice(ind.bbUpper, signal.symbol)}`);
+  if (ind.supportLevel != null) lines.push(`• Support: ${formatPrice(ind.supportLevel, signal.symbol)}`);
+  if (ind.resistanceLevel != null) lines.push(`• Resistance: ${formatPrice(ind.resistanceLevel, signal.symbol)}`);
   if (ind.volumeSpike) lines.push(`• Volume: Significant spike detected ⚠`);
   if (ind.breakoutDetected) lines.push(`• Breakout: ${ind.breakoutDirection === 'up' ? 'Upside breakout confirmed 🚀' : 'Downside breakout confirmed 📉'}`);
 
@@ -117,13 +117,21 @@ export function formatSignal(signal: SignalResult): string {
   }
 
   // Risk Management
-  if (signal.stopLoss || signal.takeProfit) {
+  if (signal.stopLoss != null || (signal.takeProfits && signal.takeProfits.length > 0)) {
     lines.push('');
     lines.push('<b>── Risk Management ──</b>');
-    if (signal.stopLoss) lines.push(`• Stop Loss: ${formatPrice(signal.stopLoss, signal.symbol)}`);
-    if (signal.takeProfit) lines.push(`• Take Profit: ${formatPrice(signal.takeProfit, signal.symbol)}`);
-    if (signal.riskRewardRatio) lines.push(`• Risk/Reward: 1:${signal.riskRewardRatio.toFixed(2)}`);
-    if (signal.positionSizeAdvice) lines.push(`• Position Size: ${signal.positionSizeAdvice}`);
+    if (signal.stopLoss != null) lines.push(`• <b>Stop Loss:</b> ${formatPrice(signal.stopLoss, signal.symbol)}`);
+    
+    if (signal.takeProfits && signal.takeProfits.length > 0) {
+      signal.takeProfits.forEach((tp, i) => {
+        lines.push(`• <b>Take Profit ${i + 1}:</b> ${formatPrice(tp, signal.symbol)}`);
+      });
+    } else if (signal.takeProfit != null) {
+      lines.push(`• <b>Take Profit:</b> ${formatPrice(signal.takeProfit, signal.symbol)}`);
+    }
+
+    if (signal.riskRewardRatio != null) lines.push(`• <b>Risk/Reward:</b> 1:${signal.riskRewardRatio.toFixed(2)}`);
+    if (signal.positionSizeAdvice) lines.push(`• <b>Position Size:</b> ${signal.positionSizeAdvice}`);
   }
 
   // Reasoning
