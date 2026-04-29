@@ -5,7 +5,7 @@
 
 import { createCanvas, SKRSContext2D } from '@napi-rs/canvas';
 import { OHLCVCandle, IndicatorResult } from '../types';
-import { SMA, RSI, DEMA } from 'technicalindicators';
+import { SMA, RSI, DEMA as dema } from 'technicalindicators';
 import { log } from '../utils/logger';
 
 const WIDTH = 900;
@@ -43,8 +43,13 @@ export class ChartService {
       const ma50: (number | null)[] = [...new Array(n - ma50Raw.length).fill(null), ...ma50Raw];
 
       // Compute DEMA(20)
-      const demaRaw = DEMA.calculate({ values: closes, period: 20 });
-      const dema: (number | null)[] = [...new Array(n - demaRaw.length).fill(null), ...demaRaw];
+      let demaLine: (number | null)[] = new Array(n).fill(null);
+      try {
+        const demaRaw = dema.calculate({ values: closes, period: 20 });
+        demaLine = [...new Array(n - demaRaw.length).fill(null), ...demaRaw];
+      } catch (e) {
+        log.warn('ChartService: DEMA plot failed');
+      }
 
       // Compute RSI
       const rsiRaw = RSI.calculate({ values: closes, period: 14 });
@@ -129,7 +134,7 @@ export class ChartService {
       this.drawLine(ctx, ma20, gap, candleW, toY, '#facc15', 1.5);
 
       // ── DEMA20 line ────────────────────────────────────────────────────────
-      this.drawLine(ctx, dema, gap, candleW, toY, '#e879f9', 2);
+      this.drawLine(ctx, demaLine, gap, candleW, toY, '#e879f9', 2);
 
       // ── Legend ─────────────────────────────────────────────────────────────
       ctx.font = '11px sans-serif';
