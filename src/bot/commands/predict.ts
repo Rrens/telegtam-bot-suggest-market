@@ -16,7 +16,10 @@ import { RiskProfile } from '../../types';
 // Usage: /predict <symbol>
 export async function handlePredict(ctx: CommandContext<Context>): Promise<void> {
   const userId = String(ctx.from!.id);
-  const symbol = ctx.match?.trim().toUpperCase();
+  let symbol = ctx.match?.trim().toUpperCase() ?? '';
+  if (symbol.length === 4 && !symbol.includes('.') && !symbol.endsWith('USDT')) {
+    symbol = `${symbol}.JK`;
+  }
 
   if (!symbol) {
     await ctx.reply(

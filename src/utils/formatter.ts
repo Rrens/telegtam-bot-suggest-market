@@ -17,9 +17,14 @@ export function formatAmount(amount: number): string {
   return parseFloat(amount.toFixed(8)).toString();
 }
 
-export function formatPrice(price: number, currency = 'USD'): string {
+export function formatPrice(price: number, symbolOrCurrency = 'USD'): string {
   const rate = PriceService.getLastUsdIdrRate();
-  if (currency === 'IDR') {
+  const symbol = symbolOrCurrency.toUpperCase();
+  
+  // Auto-detect currency from symbol
+  const isIdr = symbol === 'IDR' || symbol.endsWith('.JK') || symbol.endsWith('.ID');
+  
+  if (isIdr) {
     const rp = `Rp${price.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
     const usd = `$${(price / rate).toFixed(2)}`;
     return `${rp} (${usd})`;
@@ -65,7 +70,7 @@ export function formatSignal(signal: SignalResult): string {
     `<b>📊 ${signal.symbol.toUpperCase()} Analysis</b>`,
     `<i>${new Date(signal.timestamp).toUTCString()}</i>`,
     '',
-    `<b>Price:</b> ${formatPrice(signal.price)}`,
+    `<b>Price:</b> ${formatPrice(signal.price, signal.symbol)}`,
     `<b>Trend:</b> ${trendEmoji} ${signal.trend}`,
     `<b>Confidence:</b> ${signal.confidence.toFixed(0)}%`,
     `<b>Signal Score:</b> ${signal.signalScore >= 0 ? '+' : ''}${signal.signalScore}`,
@@ -80,11 +85,11 @@ export function formatSignal(signal: SignalResult): string {
     const macdLabel = ind.macdLine > ind.macdSignal ? '↑ Bullish crossover' : '↓ Bearish crossover';
     lines.push(`• MACD: ${macdLabel}`);
   }
-  if (ind.ma50 !== null) lines.push(`• MA50: ${formatPrice(ind.ma50)} ${signal.price > ind.ma50 ? '(Price above ✓)' : '(Price below ✗)'}`);
-  if (ind.ma200 !== null) lines.push(`• MA200: ${formatPrice(ind.ma200)} ${signal.price > ind.ma200 ? '(Price above ✓)' : '(Price below ✗)'}`);
-  if (ind.bbUpper !== null && ind.bbLower !== null) lines.push(`• BB Range: ${formatPrice(ind.bbLower)} – ${formatPrice(ind.bbUpper)}`);
-  if (ind.supportLevel !== null) lines.push(`• Support: ${formatPrice(ind.supportLevel)}`);
-  if (ind.resistanceLevel !== null) lines.push(`• Resistance: ${formatPrice(ind.resistanceLevel)}`);
+  if (ind.ma50 !== null) lines.push(`• MA50: ${formatPrice(ind.ma50, signal.symbol)} ${signal.price > ind.ma50 ? '(Price above ✓)' : '(Price below ✗)'}`);
+  if (ind.ma200 !== null) lines.push(`• MA200: ${formatPrice(ind.ma200, signal.symbol)} ${signal.price > ind.ma200 ? '(Price above ✓)' : '(Price below ✗)'}`);
+  if (ind.bbUpper !== null && ind.bbLower !== null) lines.push(`• BB Range: ${formatPrice(ind.bbLower, signal.symbol)} – ${formatPrice(ind.bbUpper, signal.symbol)}`);
+  if (ind.supportLevel !== null) lines.push(`• Support: ${formatPrice(ind.supportLevel, signal.symbol)}`);
+  if (ind.resistanceLevel !== null) lines.push(`• Resistance: ${formatPrice(ind.resistanceLevel, signal.symbol)}`);
   if (ind.volumeSpike) lines.push(`• Volume: Significant spike detected ⚠`);
   if (ind.breakoutDetected) lines.push(`• Breakout: ${ind.breakoutDirection === 'up' ? 'Upside breakout confirmed 🚀' : 'Downside breakout confirmed 📉'}`);
 
@@ -109,8 +114,8 @@ export function formatSignal(signal: SignalResult): string {
   if (signal.stopLoss || signal.takeProfit) {
     lines.push('');
     lines.push('<b>── Risk Management ──</b>');
-    if (signal.stopLoss) lines.push(`• Stop Loss: ${formatPrice(signal.stopLoss)}`);
-    if (signal.takeProfit) lines.push(`• Take Profit: ${formatPrice(signal.takeProfit)}`);
+    if (signal.stopLoss) lines.push(`• Stop Loss: ${formatPrice(signal.stopLoss, signal.symbol)}`);
+    if (signal.takeProfit) lines.push(`• Take Profit: ${formatPrice(signal.takeProfit, signal.symbol)}`);
     if (signal.riskRewardRatio) lines.push(`• Risk/Reward: 1:${signal.riskRewardRatio.toFixed(2)}`);
     if (signal.positionSizeAdvice) lines.push(`• Position Size: ${signal.positionSizeAdvice}`);
   }

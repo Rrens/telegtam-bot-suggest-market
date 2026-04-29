@@ -1,5 +1,6 @@
 import { CommandContext, Context } from 'grammy';
 import { AlertService } from '../../services/AlertService';
+import { PriceService } from '../../services/PriceService';
 import { formatPrice } from '../../utils/formatter';
 import { DbAlert } from '../../types';
 
@@ -26,11 +27,42 @@ export async function handleAlert(ctx: CommandContext<Context>): Promise<void> {
     return;
   }
 
-  const [rawSymbol, rawCondition, rawValue, flag] = args;
-  const symbol = rawSymbol.toUpperCase();
-  const condition = rawCondition.toLowerCase();
-  const value = parseFloat(rawValue);
-  const isPct = flag?.toLowerCase() === 'pct';
+  let [rawSymbol, rawCondition, rawValue, flag] = args;
+  
+  // Smart symbol normalization
+  let symbol = rawSymbol.toUpperCase();
+  if (symbol.length === 4 && !symbol.includes('.') && !symbol.endsWith('USDT')) {
+    symbol = `${symbol}.JK`;
+  }
+
+  let condition = rawCondition.toLowerCase();
+  let value = parseFloat(rawValue);
+  let isPct = flag?.toLowerCase() === 'pct';
+
+  // Fallback: If user provides 2 args like "/alert WBSA 1331", infer the condition
+  if (args.length === 2) {
+    const symbolOnly = args[0].toUpperCase();
+    const finalSymbol = (symbolOnly.length === 4 && !symbolOnly.includes('.') && !symbolOnly.endsWith('USDT')) ? `${symbolOnly}.JK` : symbolOnly;
+    const valOnly = parseFloat(args[1]);
+
+    if (!isNaN(valOnly)) {
+      try {
+        const priceData = await PriceService.getPrice(finalSymbol);
+        const autoCondition = valOnly >= priceData.price ? 'gte' : 'lte';
+        
+        const alert = await AlertService.createAlert(userId, finalSymbol, 'price_target', autoCondition, valOnly);
+        await ctx.reply(
+          `✅ <b>Alert set automatically for ${finalSymbol}</b>\n\n` +
+          `Condition: ${autoCondition === 'gte' ? '≥' : '≤'} ${formatPrice(valOnly, finalSymbol.endsWith('.JK') ? 'IDR' : 'USD')}\n` +
+          `<i>(Detected current price: ${formatPrice(priceData.price, finalSymbol.endsWith('.JK') ? 'IDR' : 'USD')})</i>`,
+          { parse_mode: 'HTML' }
+        );
+        return;
+      } catch (err) {
+        // Fallback to error message if price fetch fails
+      }
+    }
+  }
 
   if (condition !== 'gte' && condition !== 'lte') {
     await ctx.reply('Condition must be either <code>gte</code> (≥) or <code>lte</code> (≤).', { parse_mode: 'HTML' });
@@ -45,7 +77,8 @@ export async function handleAlert(ctx: CommandContext<Context>): Promise<void> {
   const alert = await AlertService.createAlert(userId, symbol, alertType, condition as 'gte' | 'lte', value);
 
   const conditionStr = condition === 'gte' ? '≥' : '≤';
-  const valueStr = isPct ? `${value}%` : formatPrice(value);
+  const currency = symbol.endsWith('.JK') ? 'IDR' : 'USD';
+  const valueStr = isPct ? `${value}%` : formatPrice(value, currency);
 
   await ctx.reply(
     `✅ <b>Alert set for ${symbol}</b>\n\n` +
