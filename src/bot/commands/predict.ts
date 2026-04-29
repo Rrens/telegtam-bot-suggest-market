@@ -60,17 +60,20 @@ export async function handlePredict(ctx: CommandContext<Context>): Promise<void>
     const message = formatSignal(signal);
     const tvLink = ChartService.getTradingViewLink(symbol);
 
-    // Send result first
+    const fullMessage = message + `\n\n📊 <a href="${tvLink}">View on TradingView</a>`;
+
+    // Send result: Photo first, then message (to avoid 1024 char caption limit)
     if (chartBuffer) {
-      await ctx.replyWithPhoto(new InputFile(chartBuffer, `${symbol}_chart.png`), {
-        caption: message + `\n\n📊 <a href="${tvLink}">View on TradingView</a>`,
-        parse_mode: 'HTML',
+      await ctx.replyWithPhoto(new InputFile(chartBuffer, `${symbol}_chart.png`));
+      await ctx.reply(fullMessage, { 
+        parse_mode: 'HTML', 
+        link_preview_options: { is_disabled: false } 
       });
     } else {
-      await ctx.reply(
-        message + `\n\n📊 <a href="${tvLink}">View on TradingView</a>`,
-        { parse_mode: 'HTML', link_preview_options: { is_disabled: false } }
-      );
+      await ctx.reply(fullMessage, { 
+        parse_mode: 'HTML', 
+        link_preview_options: { is_disabled: false } 
+      });
     }
 
     // THEN delete loading message only after success
