@@ -8,9 +8,14 @@ import {
 import { DateTime } from 'luxon';
 import { PriceService } from '../services/PriceService';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Currency / Number formatting
-// ─────────────────────────────────────────────────────────────────────────────
+import { PriceService } from '../services/PriceService';
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 export function formatAmount(amount: number): string {
   // Remove trailing zeros, up to 8 decimal places
@@ -124,19 +129,19 @@ export function formatSignal(signal: SignalResult): string {
   if (signal.reasoning.length > 0) {
     lines.push('');
     lines.push('<b>── Reasoning ──</b>');
-    signal.reasoning.forEach((r) => lines.push(`• ${r}`));
+    signal.reasoning.forEach((r) => lines.push(`• ${escapeHtml(r)}`));
   }
 
   // Invalidation
   if (signal.invalidationConditions.length > 0) {
     lines.push('');
     lines.push('<b>── Signal Invalidation ──</b>');
-    signal.invalidationConditions.forEach((c) => lines.push(`⚠ ${c}`));
+    signal.invalidationConditions.forEach((c) => lines.push(`⚠ ${escapeHtml(c)}`));
   }
 
   lines.push('');
   lines.push('<b>── Conclusion ──</b>');
-  lines.push(buildConclusion(signal));
+  lines.push(escapeHtml(buildConclusion(signal)));
   lines.push('');
   lines.push('<i>⚠ This is not financial advice. Signals are probabilistic estimates only.</i>');
 
@@ -213,12 +218,12 @@ export function formatNewsBroadcast(symbol: string, item: NewsItem): string {
 
 <b>${symbol.toUpperCase()}</b> — ${sentimentStr}
 
-📰 <a href="${item.url}">${item.title}</a>
-<b>Summary:</b> ${item.summary ?? 'No summary available.'}
+📰 <a href="${item.url}">${escapeHtml(item.title)}</a>
+<b>Summary:</b> ${escapeHtml(item.summary ?? 'No summary available.')}
 
-<b>Impact:</b> ${item.impact ?? 'Neutral market impact expected.'}
+<b>Impact:</b> ${escapeHtml(item.impact ?? 'Neutral market impact expected.')}
 
-<b>Source:</b> ${item.source}
+<b>Source:</b> ${escapeHtml(item.source)}
 <b>Time:</b> ${formatWibTime(item.publishedAt)}`;
 }
 
