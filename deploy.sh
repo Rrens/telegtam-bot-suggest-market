@@ -27,9 +27,8 @@ npm run migrate
 echo "♻️ Me-restart bot di PM2..."
 pm2 restart trading-bot
 
-pm2 logs trading-bot
-
 echo "--------------------------------------"
 echo "✅ Update selesai! Bot sudah berjalan."
 echo "--------------------------------------"
-echo "Cek log dengan: pm2 logs trading-bot"
+echo "Menampilkan 15 baris log terakhir..."
+pm2 logs trading-bot --lines 15 --no-daemon
