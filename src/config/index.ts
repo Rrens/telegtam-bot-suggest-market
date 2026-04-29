@@ -22,6 +22,7 @@ export const config = {
     user: optional('DB_USER', 'tradingbot'),
     password: optional('DB_PASSWORD', 'tradingbot_secret'),
     database: optional('DB_NAME', 'tradingbot_db'),
+    ssl: optional('DB_SSL', 'true') === 'true',
   },
   redis: {
     host: optional('REDIS_HOST', 'localhost'),
