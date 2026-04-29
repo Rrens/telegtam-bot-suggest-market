@@ -167,12 +167,13 @@ export function formatPortfolio(portfolio: PortfolioSummary): string {
   ];
 
   portfolio.assets.forEach((a) => {
-    const pnlStr = a.pnl >= 0 ? `+${formatPrice(a.pnl)}` : formatPrice(a.pnl);
+    const currency = a.currency || 'USD';
+    const pnlStr = a.pnl >= 0 ? `+${formatPrice(a.pnl, currency)}` : formatPrice(a.pnl, currency);
     lines.push(
       `\n<b>${a.symbol.toUpperCase()}</b>`,
       `  Amount: ${a.amount}`,
-      `  Avg Buy: ${formatPrice(a.avgPrice)} → Now: ${formatPrice(a.currentPrice)}`,
-      `  Value: ${formatPrice(a.value)} | PnL: ${pnlStr} (${formatPct(a.pnlPct)})`
+      `  Avg Buy: ${formatPrice(a.avgPrice, currency)} → Now: ${formatPrice(a.currentPrice, currency)}`,
+      `  Value: ${formatPrice(a.value, currency)} | PnL: ${pnlStr} (${formatPct(a.pnlPct)})`
     );
   });
 

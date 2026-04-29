@@ -233,4 +233,5 @@ export interface PortfolioAsset {
   value: number;
   pnl: number;
   pnlPct: number;
+  currency?: string;
 }

@@ -192,10 +192,27 @@ export class AlertService {
       const pnl = value - cost;
       const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
 
-      totalValue += value;
-      totalCost += cost;
+      // Currency handling: Convert everything to USD for totals
+      const currency = asset.symbol.toUpperCase().endsWith('.JK') ? 'IDR' : 'USD';
+      if (currency === 'IDR') {
+        const rate = PriceService.getLastUsdIdrRate();
+        totalValue += value / rate;
+        totalCost += cost / rate;
+      } else {
+        totalValue += value;
+        totalCost += cost;
+      }
 
-      portfolioAssets.push({ symbol: asset.symbol, amount, avgPrice, currentPrice, value, pnl, pnlPct });
+      portfolioAssets.push({ 
+        symbol: asset.symbol, 
+        amount, 
+        avgPrice, 
+        currentPrice, 
+        value, 
+        pnl, 
+        pnlPct,
+        currency 
+      } as any); // Using any to avoid type error until types are updated
     }
 
     const totalPnL = totalValue - totalCost;
