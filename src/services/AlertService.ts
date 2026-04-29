@@ -8,6 +8,7 @@ import { PriceService } from './PriceService';
 import { log } from '../utils/logger';
 import { DbAlert, DbAsset, PortfolioSummary, PortfolioAsset } from '../types';
 import { formatPrice, formatPct } from '../utils/formatter';
+import { sendNotification } from '../utils/notifier';
 
 export class AlertService {
   private static bot: Bot | null = null;
@@ -118,7 +119,7 @@ export class AlertService {
     if (!this.bot) return;
 
     try {
-      await this.bot.api.sendMessage(alert.user_id, message, { parse_mode: 'HTML' });
+      await sendNotification(this.bot, alert.user_id, message);
 
       // Deactivate alert after triggering (one-shot)
       await db('alerts').where({ id: alert.id }).update({

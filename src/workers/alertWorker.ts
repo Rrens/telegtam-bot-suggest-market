@@ -10,6 +10,7 @@ import { log } from '../utils/logger';
 import { config } from '../config';
 import { Bot } from 'grammy';
 import { formatNews } from '../utils/formatter';
+import { sendNotification } from '../utils/notifier';
 
 const ALERT_QUEUE = 'alert-check';
 const NEWS_ALERT_QUEUE = 'news-alert-check';
@@ -83,7 +84,7 @@ async function checkNewsAlerts(bot: Bot): Promise<void> {
       if (Math.abs(avgSentiment) < 0.2) continue;
 
       const message = `🔔 <b>News Alert: ${sub.symbol}</b>\n\n` + formatNews(sub.symbol, news);
-      await bot.api.sendMessage(sub.userId, message, { parse_mode: 'HTML' });
+      await sendNotification(bot, sub.userId, message);
       await AlertService.updateNewsAlertTimestamp(sub.userId, sub.symbol);
 
       log.info('News alert sent', { userId: sub.userId, symbol: sub.symbol });
