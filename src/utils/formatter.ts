@@ -222,7 +222,10 @@ export function formatNewsBroadcast(symbol: string, item: NewsItem): string {
 <b>Time:</b> ${formatWibTime(item.publishedAt)}`;
 }
 
-export function formatWibTime(date: Date): string {
+export function formatWibTime(dateInput: Date | string | number): string {
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (isNaN(date.getTime())) return 'Invalid Date';
+  
   const dt = DateTime.fromJSDate(date).setZone('Asia/Jakarta');
   return `${dt.toFormat('dd LLL yyyy, HH:mm')} WIB (≈ ${timeAgo(date)})`;
 }
@@ -278,7 +281,11 @@ export function formatHistory(symbol: string, signals: DbSignal[]): string {
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function timeAgo(date: Date): string {
+function timeAgo(dateInput: Date | string | number): string {
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  
+  if (isNaN(date.getTime())) return 'unknown time';
+
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
   if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / 60);
