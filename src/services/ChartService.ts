@@ -199,8 +199,28 @@ export class ChartService {
    */
   static getTradingViewLink(symbol: string): string {
     const upper = symbol.toUpperCase();
-    const isCrypto = upper.endsWith('USDT') || upper.endsWith('BTC') || upper.endsWith('ETH');
-    if (isCrypto) return `https://www.tradingview.com/chart/?symbol=BINANCE:${upper}`;
+    
+    // Handle Indonesian Stocks (.JK)
+    if (upper.endsWith('.JK')) {
+      const stockSymbol = upper.replace('.JK', '');
+      return `https://www.tradingview.com/chart/?symbol=IDX:${stockSymbol}`;
+    }
+
+    // Handle Crypto (Binance)
+    const cryptoExchanges = ['USDT', 'BTC', 'ETH', 'BUSD', 'BNB'];
+    const isExplicitCrypto = cryptoExchanges.some(ex => upper.endsWith(ex));
+    
+    // Common crypto coins without pair
+    const commonCoins = ['BTC', 'ETH', 'SOL', 'BNB', 'ADA', 'XRP', 'DOT', 'DOGE'];
+    
+    if (isExplicitCrypto) {
+      return `https://www.tradingview.com/chart/?symbol=BINANCE:${upper}`;
+    }
+    
+    if (commonCoins.includes(upper)) {
+      return `https://www.tradingview.com/chart/?symbol=BINANCE:${upper}USDT`;
+    }
+
     return `https://www.tradingview.com/chart/?symbol=${upper}`;
   }
 }
