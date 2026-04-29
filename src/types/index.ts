@@ -141,6 +141,7 @@ export interface IndicatorResult {
   bbUpper: number | null;
   bbMiddle: number | null;
   bbLower: number | null;
+  dema20: number | null;
   volumeSpike: boolean;
   supportLevel: number | null;
   resistanceLevel: number | null;

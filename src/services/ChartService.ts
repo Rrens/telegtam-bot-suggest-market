@@ -5,16 +5,18 @@
 
 import { createCanvas, SKRSContext2D } from '@napi-rs/canvas';
 import { OHLCVCandle, IndicatorResult } from '../types';
-import { SMA } from 'technicalindicators';
+import { SMA, RSI, DEMA } from 'technicalindicators';
 import { log } from '../utils/logger';
 
 const WIDTH = 900;
-const HEIGHT = 560;
+const HEIGHT = 650; // Increased height to accommodate RSI
 const PADDING = { top: 40, right: 20, bottom: 60, left: 80 };
 const CHART_H = HEIGHT - PADDING.top - PADDING.bottom;
 const CHART_W = WIDTH - PADDING.left - PADDING.right;
-const VOL_H = CHART_H * 0.2; // volume panel: 20% of chart height
-const PRICE_H = CHART_H - VOL_H - 10;
+
+const RSI_H = 80; // height of RSI panel
+const VOL_H = 60; // volume panel height
+const PRICE_H = CHART_H - VOL_H - RSI_H - 40; // remaining space for price
 
 export class ChartService {
   /**
@@ -39,6 +41,14 @@ export class ChartService {
       const ma50Raw = SMA.calculate({ values: closes, period: 50 });
       const ma20: (number | null)[] = [...new Array(n - ma20Raw.length).fill(null), ...ma20Raw];
       const ma50: (number | null)[] = [...new Array(n - ma50Raw.length).fill(null), ...ma50Raw];
+
+      // Compute DEMA(20)
+      const demaRaw = DEMA.calculate({ values: closes, period: 20 });
+      const dema: (number | null)[] = [...new Array(n - demaRaw.length).fill(null), ...demaRaw];
+
+      // Compute RSI
+      const rsiRaw = RSI.calculate({ values: closes, period: 14 });
+      const rsi: (number | null)[] = [...new Array(n - rsiRaw.length).fill(null), ...rsiRaw];
 
       // Price range
       const allHighs = data.map((c) => c.high);
@@ -118,8 +128,8 @@ export class ChartService {
       // ── MA20 line ──────────────────────────────────────────────────────────
       this.drawLine(ctx, ma20, gap, candleW, toY, '#facc15', 1.5);
 
-      // ── MA50 line ──────────────────────────────────────────────────────────
-      this.drawLine(ctx, ma50, gap, candleW, toY, '#60a5fa', 1.5);
+      // ── DEMA20 line ────────────────────────────────────────────────────────
+      this.drawLine(ctx, dema, gap, candleW, toY, '#e879f9', 2);
 
       // ── Legend ─────────────────────────────────────────────────────────────
       ctx.font = '11px sans-serif';
@@ -133,6 +143,11 @@ export class ChartService {
       ctx.fillStyle = '#d1d5db';
       ctx.fillText('MA50', PADDING.left + 95, PADDING.top + 13);
 
+      ctx.fillStyle = '#e879f9';
+      ctx.fillRect(PADDING.left + 140, PADDING.top + 8, 16, 3);
+      ctx.fillStyle = '#d1d5db';
+      ctx.fillText('DEMA20', PADDING.left + 160, PADDING.top + 13);
+
       // ── Volume bars ────────────────────────────────────────────────────────
       const volBaseY = PADDING.top + PRICE_H + 10 + VOL_H;
       for (let i = 0; i < n; i++) {
@@ -142,6 +157,37 @@ export class ChartService {
         ctx.fillStyle = c.close >= c.open ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)';
         ctx.fillRect(x, volBaseY - barH, candleW, barH);
       }
+
+      // ── RSI Plot ───────────────────────────────────────────────────────────
+      const rsiBaseY = HEIGHT - PADDING.bottom;
+      const toY_Rsi = (val: number) => rsiBaseY - (val / 100) * RSI_H;
+
+      // RSI Grid (30, 50, 70)
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.setLineDash([5, 5]);
+      [30, 50, 70].forEach(level => {
+        const y = toY_Rsi(level);
+        ctx.beginPath();
+        ctx.moveTo(PADDING.left, y);
+        ctx.lineTo(PADDING.left + CHART_W, y);
+        ctx.stroke();
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '9px sans-serif';
+        ctx.fillText(level.toString(), PADDING.left - 15, y + 3);
+      });
+      ctx.setLineDash([]);
+
+      // RSI Overbought/Oversold shading
+      ctx.fillStyle = 'rgba(129, 140, 248, 0.05)';
+      ctx.fillRect(PADDING.left, toY_Rsi(70), CHART_W, toY_Rsi(30) - toY_Rsi(70));
+
+      // RSI Line
+      this.drawLine(ctx, rsi, gap, candleW, (v) => toY_Rsi(v), '#818cf8', 1.5);
+
+      // RSI Title
+      ctx.fillStyle = '#818cf8';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(`RSI(14): ${ind.rsi?.toFixed(1) ?? 'N/A'}`, PADDING.left + 5, rsiBaseY - RSI_H + 12);
 
       // ── X-axis labels (date) ───────────────────────────────────────────────
       ctx.fillStyle = '#6b7280';

@@ -91,7 +91,8 @@ export function formatSignal(signal: SignalResult): string {
     lines.push(`• MACD: ${macdLabel}`);
   }
   if (ind.ma50 !== null) lines.push(`• MA50: ${formatPrice(ind.ma50, signal.symbol)} ${signal.price > ind.ma50 ? '(Price above ✓)' : '(Price below ✗)'}`);
-  if (ind.ma200 !== null) lines.push(`• MA200: ${formatPrice(ind.ma200, signal.symbol)} ${signal.price > ind.ma200 ? '(Price above ✓)' : '(Price below ✗)'}`);
+  if (ind.ma200 !== null) lines.push(`• MA200: ${formatPrice(ind.ma200, signal.symbol)} ${ind.ma200 < signal.price ? '(Price above ✓)' : '(Price below ✕)'}`);
+  if (ind.dema20 !== null) lines.push(`• DEMA(20): ${formatPrice(ind.dema20, signal.symbol)} ${ind.dema20 < signal.price ? '(Bullish ✓)' : '(Bearish ✕)'}`);
   if (ind.bbUpper !== null && ind.bbLower !== null) lines.push(`• BB Range: ${formatPrice(ind.bbLower, signal.symbol)} – ${formatPrice(ind.bbUpper, signal.symbol)}`);
   if (ind.supportLevel !== null) lines.push(`• Support: ${formatPrice(ind.supportLevel, signal.symbol)}`);
   if (ind.resistanceLevel !== null) lines.push(`• Resistance: ${formatPrice(ind.resistanceLevel, signal.symbol)}`);

@@ -176,6 +176,21 @@ export class SignalEngine {
       }
     }
 
+    // ── DEMA 20 (weight: 1) ──────────────────────────────────────────────────
+    if (ind.dema20 !== null) {
+      // We don't have current price here directly, but we can infer from indicators if needed.
+      // For now, let's compare DEMA to MA50 as a momentum proxy
+      if (ind.ma50 !== null) {
+        if (ind.dema20 > ind.ma50) {
+          score += 1;
+          reasoning.push('DEMA(20) > MA50: Short-term momentum is accelerating upward');
+        } else {
+          score -= 1;
+          reasoning.push('DEMA(20) < MA50: Short-term momentum is slowing down');
+        }
+      }
+    }
+
     // ── Bollinger Bands (weight: 1) ──────────────────────────────────────────
     if (ind.bbLower !== null && ind.bbUpper !== null && ind.bbMiddle !== null) {
       // We'll compare relative to middle as proxy

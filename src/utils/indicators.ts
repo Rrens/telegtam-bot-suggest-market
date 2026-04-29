@@ -9,6 +9,7 @@ import {
   BollingerBands,
   SMA,
   EMA,
+  DEMA,
 } from 'technicalindicators';
 import { OHLCVCandle, IndicatorResult } from '../types';
 
@@ -47,9 +48,12 @@ export function computeIndicators(candles: OHLCVCandle[]): IndicatorResult {
   const ma50 = ma50Values.length > 0 ? ma50Values[ma50Values.length - 1] : null;
   const ma200 = ma200Values.length > 0 ? ma200Values[ma200Values.length - 1] : null;
 
-  // Bollinger Bands(20,2)
   const bbValues = BollingerBands.calculate({ values: closes, period: 20, stdDev: 2 });
   const lastBb = bbValues.length > 0 ? bbValues[bbValues.length - 1] : null;
+
+  // DEMA(20)
+  const demaValues = DEMA.calculate({ values: closes, period: 20 });
+  const lastDema = demaValues.length > 0 ? demaValues[demaValues.length - 1] : null;
 
   // Volume spike: current volume > 2x 20-period average volume
   const last20Vols = volumes.slice(-20);
@@ -79,6 +83,7 @@ export function computeIndicators(candles: OHLCVCandle[]): IndicatorResult {
     bbUpper: lastBb?.upper ?? null,
     bbMiddle: lastBb?.middle ?? null,
     bbLower: lastBb?.lower ?? null,
+    dema20: lastDema,
     volumeSpike,
     supportLevel: support,
     resistanceLevel: resistance,
@@ -141,6 +146,7 @@ function emptyIndicators(): IndicatorResult {
     bbUpper: null,
     bbMiddle: null,
     bbLower: null,
+    dema20: null,
     volumeSpike: false,
     supportLevel: null,
     resistanceLevel: null,

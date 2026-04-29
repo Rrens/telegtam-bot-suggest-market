@@ -272,7 +272,17 @@ export class PriceService {
    * Map common Binance symbols to CoinGecko IDs.
    */
   static symbolToCoinGeckoId(symbol: string): string {
-    const upper = symbol.toUpperCase().replace('USDT', '').replace('BTC', '').replace('ETH', '');
+    let base = symbol.toUpperCase();
+    
+    // Only strip the suffix if it's a pair (e.g., BTCUSDT -> BTC)
+    const suffixes = ['USDT', 'BUSD', 'USDC', 'TUSD', 'UST'];
+    for (const suffix of suffixes) {
+      if (base.endsWith(suffix) && base.length > suffix.length) {
+        base = base.substring(0, base.length - suffix.length);
+        break;
+      }
+    }
+
     const mapping: Record<string, string> = {
       BTC: 'bitcoin', ETH: 'ethereum', BNB: 'binancecoin',
       SOL: 'solana', XRP: 'ripple', ADA: 'cardano',
@@ -282,7 +292,7 @@ export class PriceService {
       ATOM: 'cosmos', NEAR: 'near', APT: 'aptos',
       OP: 'optimism', ARB: 'arbitrum',
     };
-    return mapping[upper] ?? upper.toLowerCase();
+    return mapping[base] ?? base.toLowerCase();
   }
 
   /**
