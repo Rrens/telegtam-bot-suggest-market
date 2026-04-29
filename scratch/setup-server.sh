@@ -19,15 +19,6 @@ nvm use 20
 echo "Installing PM2..."
 npm install pm2 -g
 
-echo "Installing PostgreSQL and Redis..."
-sudo apt install -y postgresql postgresql-contrib redis-server
-
-echo "Setting up PostgreSQL..."
-# Membuat user dan database (Ganti password di bawah!)
-sudo -u postgres psql -c "CREATE DATABASE tradingbot_db;"
-sudo -u postgres psql -c "CREATE USER tradingbot WITH ENCRYPTED PASSWORD 'tradingbot_secret';"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tradingbot_db TO tradingbot;"
-
 echo "------------------------------------------------"
 echo "SETUP SELESAI!"
 echo "------------------------------------------------"
