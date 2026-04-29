@@ -20,6 +20,8 @@ import { handleProfile } from './commands/profile';
 import { handleInfo } from './commands/info';
 import { handleHelp } from './commands/help';
 import { handleKurs } from './commands/kurs';
+import { handleDelAlert } from './commands/delalert';
+import { handleListAlerts } from './commands/listalerts';
 import { log } from '../utils/logger';
 
 export function createBot(): Bot {
@@ -32,9 +34,11 @@ export function createBot(): Bot {
   bot.command('start', handleStart);
   bot.command('add', handleAdd);
   bot.command('list', handleList);
+  bot.command('listalerts', handleListAlerts);
   bot.command('delete', handleDelete);
   bot.command('portfolio', handlePortfolio);
   bot.command('alert', handleAlert);
+  bot.command('delalert', handleDelAlert);
   bot.command('predict', handlePredict);
   bot.command('history', handleHistory);
   bot.command('news', handleNews);
@@ -72,9 +76,11 @@ export function createBot(): Bot {
     { command: 'news', description: 'Latest news with sentiment' },
     { command: 'add', description: 'Add asset to portfolio' },
     { command: 'list', description: 'List tracked assets' },
+    { command: 'listalerts', description: 'List active price alerts' },
     { command: 'delete', description: 'Remove an asset' },
     { command: 'portfolio', description: 'Portfolio PnL summary' },
     { command: 'alert', description: 'Set price alert' },
+    { command: 'delalert', description: 'Delete a price alert by ID' },
     { command: 'alertnews', description: 'Subscribe to news alerts' },
     { command: 'history', description: 'Signal history for a symbol' },
     { command: 'profile', description: 'Set risk profile & timeframe' },
