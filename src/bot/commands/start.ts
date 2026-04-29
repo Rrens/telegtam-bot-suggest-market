@@ -38,6 +38,7 @@ export async function handleStart(ctx: CommandContext<Context>): Promise<void> {
     `/history &lt;symbol&gt; — Past signal history\n` +
     `/backtest &lt;symbol&gt; — Strategy backtesting\n` +
     `/profile — Set risk profile & timeframe\n\n` +
+    `👨‍💻 <b>Developer:</b> Rendy Yusuf — <a href="https://www.linkedin.com/in/rendy-yusuf/">LinkedIn</a>\n\n` +
     `<i>⚠ Signals are probabilistic. Not financial advice.</i>`,
     { parse_mode: 'HTML' }
   );

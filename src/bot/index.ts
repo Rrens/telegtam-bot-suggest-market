@@ -22,6 +22,7 @@ import { handleHelp } from './commands/help';
 import { handleKurs } from './commands/kurs';
 import { handleDelAlert } from './commands/delalert';
 import { handleListAlerts } from './commands/listalerts';
+import { handleCredits } from './commands/credits';
 import { log } from '../utils/logger';
 
 export function createBot(): Bot {
@@ -47,6 +48,7 @@ export function createBot(): Bot {
   bot.command('info', handleInfo);
   bot.command('kurs', handleKurs);
   bot.command('help', handleHelp);
+  bot.command('credits', handleCredits);
 
   // ── Channel Support ─────────────────────────────────────────────────────────
   // Allows commands like /info or /kurs to work when posted in a channel
