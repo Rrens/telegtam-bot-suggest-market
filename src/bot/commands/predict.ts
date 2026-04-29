@@ -9,6 +9,7 @@ import { db } from '../../db';
 import { SignalEngine } from '../../services/SignalEngine';
 import { ChartService } from '../../services/ChartService';
 import { PriceService } from '../../services/PriceService';
+import { GeminiService } from '../../services/GeminiService';
 import { formatSignal } from '../../utils/formatter';
 import { log } from '../../utils/logger';
 import { RiskProfile } from '../../types';
@@ -43,7 +44,7 @@ export async function handlePredict(ctx: CommandContext<Context>): Promise<void>
     await db('signal_history')
       .insert({
         user_id: userId,
-        signal_id: null, // latest signal was persisted by engine
+        signal_id: null,
         symbol: symbol,
         outcome: 'pending',
         entry_price: signal.price,
@@ -59,29 +60,43 @@ export async function handlePredict(ctx: CommandContext<Context>): Promise<void>
     // Build message
     const message = formatSignal(signal);
     const tvLink = ChartService.getTradingViewLink(symbol);
-
     const fullMessage = message + `\n\n📊 <a href="${tvLink}">View on TradingView</a>`;
 
-    // Send result: Photo first, then message (to avoid 1024 char caption limit)
+    // ── Send: Photo first, then technical analysis ─────────────────────────
     if (chartBuffer) {
       await ctx.replyWithPhoto(new InputFile(chartBuffer, `${symbol}_chart.png`));
-      await ctx.reply(fullMessage, { 
-        parse_mode: 'HTML', 
-        link_preview_options: { is_disabled: false } 
-      });
-    } else {
-      await ctx.reply(fullMessage, { 
-        parse_mode: 'HTML', 
-        link_preview_options: { is_disabled: false } 
-      });
+    }
+    await ctx.reply(fullMessage, {
+      parse_mode: 'HTML',
+      link_preview_options: { is_disabled: false },
+    });
+
+    // ── AI Prediction (restricted to allowed users) ────────────────────────
+    if (GeminiService.isAllowed(userId)) {
+      try {
+        const aiLoadingMsg = await ctx.reply(`🤖 <b>Generating AI prediction...</b>`, { parse_mode: 'HTML' });
+        const aiText = await GeminiService.predict(signal);
+
+        await ctx.api.deleteMessage(ctx.chat!.id, aiLoadingMsg.message_id).catch(() => {});
+
+        const aiMessage = `🤖 <b>AI Prediction — ${symbol}</b>\n<i>Powered by Gemini</i>\n\n${aiText}\n\n<i>⚠ AI predictions are probabilistic and not financial advice.</i>`;
+        await ctx.reply(aiMessage, {
+          parse_mode: 'HTML',
+          link_preview_options: { is_disabled: true },
+        });
+
+        log.info('AI prediction sent', { userId, symbol });
+      } catch (aiErr) {
+        log.warn('AI prediction failed', { userId, symbol, error: (aiErr as Error).message });
+        await ctx.reply(`🤖 <b>AI Prediction unavailable</b>: ${(aiErr as Error).message}`, { parse_mode: 'HTML' });
+      }
     }
 
-    // THEN delete loading message only after success
+    // Delete loading message
     await ctx.api.deleteMessage(ctx.chat!.id, loadingMsg.message_id).catch(() => {});
 
     log.info('Predict command completed', { userId, symbol, trend: signal.trend, confidence: signal.confidence });
   } catch (err) {
-    // Only try to edit if the message likely still exists
     try {
       await ctx.api.editMessageText(
         ctx.chat!.id,
@@ -90,9 +105,9 @@ export async function handlePredict(ctx: CommandContext<Context>): Promise<void>
         { parse_mode: 'HTML' }
       );
     } catch {
-      // If edit fails (e.g. message already deleted), just send a new message
       await ctx.reply(`Failed to analyze <b>${symbol}</b>: ${(err as Error).message}`);
     }
     log.error('Predict command failed', { userId, symbol, error: (err as Error).message });
   }
 }
+

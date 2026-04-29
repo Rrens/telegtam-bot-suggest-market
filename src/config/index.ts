@@ -50,4 +50,12 @@ export const config = {
     signalRecalcMs: parseInt(optional('SIGNAL_RECALC_INTERVAL_MS', '300000')),
     newsAlertCooldownMs: parseInt(optional('NEWS_ALERT_COOLDOWN_MS', '3600000')),
   },
+  gemini: {
+    apiKey: optional('GEMINI_API_KEY', ''),
+    // Comma-separated list of Telegram user IDs allowed to receive AI predictions
+    allowedUserIds: optional('AI_PREDICT_ALLOWED_IDS', '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean),
+  },
 };
