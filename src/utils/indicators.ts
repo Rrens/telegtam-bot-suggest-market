@@ -12,6 +12,7 @@ import {
   DEMA as dema,
 } from 'technicalindicators';
 import { OHLCVCandle, IndicatorResult } from '../types';
+import { log } from './logger';
 
 /**
  * Compute all technical indicators from OHLCV candle data.
