@@ -142,6 +142,8 @@ export interface IndicatorResult {
   bbMiddle: number | null;
   bbLower: number | null;
   dema20: number | null;
+  superTrend: number | null;
+  superTrendDirection: 'up' | 'down' | null;
   volumeSpike: boolean;
   supportLevel: number | null;
   resistanceLevel: number | null;

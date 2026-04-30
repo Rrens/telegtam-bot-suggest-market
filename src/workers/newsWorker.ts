@@ -83,7 +83,10 @@ export function startNewsWorker(bot: Bot): void {
 
   // ── 3. Alert Job (Channel Broadcast) ──────────────────────────────────────
   new Worker(ALERT_QUEUE, async (job: Job) => {
-    if (!config.bot.channelId) return; // Broadcasting disabled if no channel ID
+    const channelId = config.bot.channelId;
+    if (!channelId || channelId === '' || channelId.includes('@your_channel')) {
+      return; // Broadcasting disabled if no valid channel ID
+    }
 
     const { symbol, items } = job.data as { symbol: string, items: NewsItem[] };
     

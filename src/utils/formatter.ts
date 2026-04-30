@@ -8,8 +8,6 @@ import {
 import { DateTime } from 'luxon';
 import { PriceService } from '../services/PriceService';
 
-import { PriceService } from '../services/PriceService';
-
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
@@ -18,7 +16,6 @@ function escapeHtml(text: string): string {
 }
 
 export function formatAmount(amount: number): string {
-  // Remove trailing zeros, up to 8 decimal places
   return parseFloat(amount.toFixed(8)).toString();
 }
 
@@ -26,7 +23,6 @@ export function formatPrice(price: number, symbolOrCurrency = 'USD'): string {
   const rate = PriceService.getLastUsdIdrRate();
   const symbol = symbolOrCurrency.toUpperCase();
   
-  // Auto-detect currency from symbol
   const isIdr = symbol === 'IDR' || symbol.endsWith('.JK') || symbol.endsWith('.ID');
   
   if (isIdr) {
@@ -70,103 +66,82 @@ export function formatSignal(signal: SignalResult): string {
 
   const biasEmoji = signal.tradeBias === 'long' ? '📈' : signal.tradeBias === 'short' ? '📉' : '⏸';
   const sentimentEmoji = signal.newsSentiment === 'positive' ? '(Positive)' : signal.newsSentiment === 'negative' ? '(Negative)' : '(Neutral)';
-
-  const lines: string[] = [
-    `<b>📊 ${signal.symbol.toUpperCase()} Analysis</b>`,
-    `<i>${new Date(signal.timestamp).toUTCString()}</i>`,
-    '',
-    `<b>Price:</b> ${formatPrice(signal.price, signal.symbol)}`,
-    `<b>Trend:</b> ${trendEmoji} ${signal.trend}`,
-    `<b>Confidence:</b> ${(signal.confidence ?? 0).toFixed(0)}%`,
-    `<b>Signal Score:</b> ${signal.signalScore >= 0 ? '+' : ''}${signal.signalScore}`,
-    `<b>Trade Bias:</b> ${biasEmoji} ${signal.tradeBias.charAt(0).toUpperCase() + signal.tradeBias.slice(1)}`,
-    '',
-    '<b>── Technical Analysis ──</b>',
-  ];
-
   const ind = signal.indicators;
-  if (ind.rsi != null) lines.push(`• RSI(14): ${ind.rsi.toFixed(1)} ${getRsiLabel(ind.rsi)}`);
-  if (ind.macdLine != null && ind.macdSignal != null) {
-    const macdLabel = ind.macdLine > ind.macdSignal ? '↑ Bullish crossover' : '↓ Bearish crossover';
-    lines.push(`• MACD: ${macdLabel}`);
-  }
-  if (ind.ma50 != null) lines.push(`• MA50: ${formatPrice(ind.ma50, signal.symbol)} ${signal.price > ind.ma50 ? '(Price above ✓)' : '(Price below ✗)'}`);
-  if (ind.ma200 != null) lines.push(`• MA200: ${formatPrice(ind.ma200, signal.symbol)} ${ind.ma200 < signal.price ? '(Price above ✓)' : '(Price below ✕)'}`);
-  if (ind.dema20 != null) lines.push(`• DEMA(20): ${formatPrice(ind.dema20, signal.symbol)} ${ind.dema20 < signal.price ? '(Bullish ✓)' : '(Bearish ✕)'}`);
-  if (ind.bbUpper != null && ind.bbLower != null) lines.push(`• BB Range: ${formatPrice(ind.bbLower, signal.symbol)} – ${formatPrice(ind.bbUpper, signal.symbol)}`);
-  if (ind.supportLevel != null) lines.push(`• Support: ${formatPrice(ind.supportLevel, signal.symbol)}`);
-  if (ind.resistanceLevel != null) lines.push(`• Resistance: ${formatPrice(ind.resistanceLevel, signal.symbol)}`);
-  if (ind.volumeSpike) lines.push(`• Volume: Significant spike detected ⚠`);
-  if (ind.breakoutDetected) lines.push(`• Breakout: ${ind.breakoutDirection === 'up' ? 'Upside breakout confirmed 🚀' : 'Downside breakout confirmed 📉'}`);
 
-  // Fundamental
-  if (signal.fundamentalRating) {
-    lines.push('');
-    lines.push('<b>── Fundamentals ──</b>');
-    lines.push(`Rating: ${signal.fundamentalRating.charAt(0).toUpperCase() + signal.fundamentalRating.slice(1)}`);
-  }
+  // 1. Header Section
+  const header = [
+    `📊 <b>${signal.symbol.toUpperCase()} Analysis</b>`,
+    `<i>${new Date(signal.timestamp).toUTCString()}</i>`,
+    ''
+  ].join('\n');
 
-  // News
+  // 2. Data Section (Monospace Code Block)
+  const dataLines = [
+    `Price: ${formatPrice(signal.price, signal.symbol)}`,
+    `Trend: ${trendEmoji} ${signal.trend}`,
+    `Confidence: ${(signal.confidence ?? 0).toFixed(0)}%`,
+    `Score: ${signal.signalScore >= 0 ? '+' : ''}${signal.signalScore}`,
+    `Bias: ${biasEmoji} ${signal.tradeBias.toUpperCase()}`,
+    '',
+    '── Technical Analysis ──',
+    ind.rsi != null ? `• RSI(14): ${ind.rsi.toFixed(1)} ${getRsiLabel(ind.rsi)}` : null,
+    ind.macdLine != null && ind.macdSignal != null ? `• MACD: ${ind.macdLine > ind.macdSignal ? '↑ Bullish' : '↓ Bearish'}` : null,
+    ind.ma50 != null ? `• DEMA50: ${formatPrice(ind.ma50, signal.symbol)} ${signal.price > ind.ma50 ? '✓' : '✗'}` : null,
+    ind.ma200 != null ? `• DEMA200: ${formatPrice(ind.ma200, signal.symbol)} ${signal.price > ind.ma200 ? '✓' : '✗'}` : null,
+    ind.dema20 != null ? `• DEMA20: ${formatPrice(ind.dema20, signal.symbol)} ${signal.price > ind.dema20 ? '✓' : '✗'}` : null,
+    ind.superTrend != null ? `• SuperTrend: ${ind.superTrendDirection?.toUpperCase() ?? 'N/A'}` : null,
+    ind.bbUpper != null && ind.bbLower != null ? `• BB: ${formatPrice(ind.bbLower, signal.symbol)}-${formatPrice(ind.bbUpper, signal.symbol)}` : null,
+    ind.supportLevel != null ? `• Support: ${formatPrice(ind.supportLevel, signal.symbol)}` : null,
+    ind.resistanceLevel != null ? `• Resistance: ${formatPrice(ind.resistanceLevel, signal.symbol)}` : null,
+    '',
+    '── Risk Management ──',
+    signal.stopLoss != null ? `• SL: ${formatPrice(signal.stopLoss, signal.symbol)}` : null,
+    ...(signal.takeProfits || []).map((tp, i) => `• TP${i + 1}: ${formatPrice(tp, signal.symbol)}`),
+    `• R/R: 1:${(signal.riskRewardRatio ?? 0).toFixed(2)}`,
+    `• Size: ${signal.positionSizeAdvice}`,
+    '',
+    '── Reasoning ──',
+    ...signal.reasoning.slice(0, 4).map(r => `• ${r.length > 40 ? r.slice(0, 37) + '...' : r}`),
+  ].filter(Boolean);
+
+  const dataBlock = `<code>${dataLines.join('\n')}</code>`;
+
+  // 3. News Section (Normal HTML for links)
+  let newsBlock = '';
   if (signal.newsItems.length > 0) {
-    lines.push('');
-    lines.push(`<b>── News Sentiment: ${sentimentEmoji} ──</b>`);
-    signal.newsItems.slice(0, 3).forEach((item) => {
+    const newsItems = signal.newsItems.slice(0, 3).map(item => {
       const sIcon = item.sentiment === 'positive' ? '▲' : item.sentiment === 'negative' ? '▼' : '–';
-      lines.push(`${sIcon} <a href="${item.url}">${item.title.slice(0, 80)}${item.title.length > 80 ? '…' : ''}</a>`);
+      return `${sIcon} <a href="${item.url}">${item.title.slice(0, 60)}…</a>`;
     });
+    newsBlock = [
+      '',
+      `<b>── News Sentiment: ${sentimentEmoji} ──</b>`,
+      ...newsItems
+    ].join('\n');
   }
 
-  // Risk Management
-  if (signal.stopLoss != null || (signal.takeProfits && signal.takeProfits.length > 0)) {
-    lines.push('');
-    lines.push('<b>── Risk Management ──</b>');
-    if (signal.stopLoss != null) lines.push(`• <b>Stop Loss:</b> ${formatPrice(signal.stopLoss, signal.symbol)}`);
-    
-    if (signal.takeProfits && signal.takeProfits.length > 0) {
-      signal.takeProfits.forEach((tp, i) => {
-        lines.push(`• <b>Take Profit ${i + 1}:</b> ${formatPrice(tp, signal.symbol)}`);
-      });
-    } else if (signal.takeProfit != null) {
-      lines.push(`• <b>Take Profit:</b> ${formatPrice(signal.takeProfit, signal.symbol)}`);
-    }
+  // 4. Conclusion & Disclaimer
+  const conclusion = [
+    '',
+    '<b>── Conclusion ──</b>',
+    escapeHtml(buildConclusion(signal)),
+    '',
+    '<i>⚠ This is not financial advice.</i>'
+  ].join('\n');
 
-    if (signal.riskRewardRatio != null) lines.push(`• <b>Risk/Reward:</b> 1:${signal.riskRewardRatio.toFixed(2)}`);
-    if (signal.positionSizeAdvice) lines.push(`• <b>Position Size:</b> ${signal.positionSizeAdvice}`);
-  }
-
-  // Reasoning
-  if (signal.reasoning.length > 0) {
-    lines.push('');
-    lines.push('<b>── Reasoning ──</b>');
-    signal.reasoning.forEach((r) => lines.push(`• ${escapeHtml(r)}`));
-  }
-
-  // Invalidation
-  if (signal.invalidationConditions.length > 0) {
-    lines.push('');
-    lines.push('<b>── Signal Invalidation ──</b>');
-    signal.invalidationConditions.forEach((c) => lines.push(`⚠ ${escapeHtml(c)}`));
-  }
-
-  lines.push('');
-  lines.push('<b>── Conclusion ──</b>');
-  lines.push(escapeHtml(buildConclusion(signal)));
-  lines.push('');
-  lines.push('<i>⚠ This is not financial advice. Signals are probabilistic estimates only.</i>');
-
-  return lines.join('\n');
+  return header + dataBlock + newsBlock + conclusion;
 }
 
 function getRsiLabel(rsi: number): string {
-  if (rsi < 30) return '→ Oversold (reversal potential)';
-  if (rsi > 70) return '→ Overbought (pullback risk)';
-  return '→ Neutral zone';
+  if (rsi < 30) return '(Oversold)';
+  if (rsi > 70) return '(Overbought)';
+  return '(Neutral)';
 }
 
 function buildConclusion(signal: SignalResult): string {
   const strength = signal.confidence >= 75 ? 'High' : signal.confidence >= 55 ? 'Moderate' : 'Low';
   const direction = signal.trend.includes('Bullish') ? 'upward' : signal.trend.includes('Bearish') ? 'downward' : 'sideways';
-  return `${strength} probability ${direction} continuation with ${signal.confidence >= 75 ? 'strong' : 'some'} confluence across indicators.`;
+  return `${strength} probability ${direction} continuation with ${signal.confidence >= 75 ? 'strong' : 'some'} confluence.`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -227,7 +202,7 @@ export function formatNewsBroadcast(symbol: string, item: NewsItem): string {
 
 <b>${symbol.toUpperCase()}</b> — ${sentimentStr}
 
-📰 <a href="${item.url}">${escapeHtml(item.title)}</a>
+Base News: <a href="${item.url}">${escapeHtml(item.title)}</a>
 <b>Summary:</b> ${escapeHtml(item.summary ?? 'No summary available.')}
 
 <b>Impact:</b> ${escapeHtml(item.impact ?? 'Neutral market impact expected.')}
@@ -291,13 +266,8 @@ export function formatHistory(symbol: string, signals: DbSignal[]): string {
   return lines.join('\n');
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
 function timeAgo(dateInput: Date | string | number): string {
   const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
-  
   if (isNaN(date.getTime())) return 'unknown time';
 
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);

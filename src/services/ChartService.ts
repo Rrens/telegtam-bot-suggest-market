@@ -7,6 +7,7 @@ import { createCanvas, SKRSContext2D } from '@napi-rs/canvas';
 import { OHLCVCandle, IndicatorResult } from '../types';
 import { SMA, RSI, DEMA as dema } from 'technicalindicators';
 import { log } from '../utils/logger';
+import { computeSuperTrendFull } from '../utils/indicators';
 
 const WIDTH = 900;
 const HEIGHT = 650; // Increased height to accommodate RSI
@@ -54,6 +55,10 @@ export class ChartService {
       // Compute RSI
       const rsiRaw = RSI.calculate({ values: closes, period: 14 });
       const rsi: (number | null)[] = [...new Array(n - rsiRaw.length).fill(null), ...rsiRaw];
+
+      // Compute SuperTrend
+      const stFull = computeSuperTrendFull(candles, 10, 3);
+      const superTrendSeries = [...new Array(n - stFull.length).fill(null), ...stFull];
 
       // Price range
       const allHighs = data.map((c) => c.high);
@@ -136,6 +141,9 @@ export class ChartService {
       // ── DEMA20 line ────────────────────────────────────────────────────────
       this.drawLine(ctx, demaLine, gap, candleW, toY, '#e879f9', 2);
 
+      // ── SuperTrend line ───────────────────────────────────────────────────
+      this.drawSuperTrend(ctx, superTrendSeries, gap, candleW, toY);
+
       // ── Legend ─────────────────────────────────────────────────────────────
       ctx.font = '11px sans-serif';
       ctx.fillStyle = '#facc15';
@@ -152,6 +160,11 @@ export class ChartService {
       ctx.fillRect(PADDING.left + 140, PADDING.top + 8, 16, 3);
       ctx.fillStyle = '#d1d5db';
       ctx.fillText('DEMA20', PADDING.left + 160, PADDING.top + 13);
+
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(PADDING.left + 215, PADDING.top + 8, 16, 3);
+      ctx.fillStyle = '#d1d5db';
+      ctx.fillText('SuperTrend', PADDING.left + 235, PADDING.top + 13);
 
       // ── Volume bars ────────────────────────────────────────────────────────
       const volBaseY = PADDING.top + PRICE_H + 10 + VOL_H;
@@ -210,6 +223,33 @@ export class ChartService {
     } catch (err) {
       log.error('ChartService: chart generation failed', { symbol, error: (err as Error).message });
       return null;
+    }
+  }
+
+  /** Draw SuperTrend line with color switching */
+  private static drawSuperTrend(
+    ctx: SKRSContext2D,
+    series: ({ superTrend: number | null, superTrendDirection: 'up' | 'down' | null } | null)[],
+    gap: number,
+    candleW: number,
+    toY: (v: number) => number
+  ): void {
+    ctx.lineWidth = 2;
+    
+    for (let i = 1; i < series.length; i++) {
+      const prev = series[i - 1];
+      const curr = series[i];
+      if (!prev || !curr || prev.superTrend === null || curr.superTrend === null) continue;
+
+      ctx.strokeStyle = curr.superTrendDirection === 'up' ? '#22c55e' : '#ef4444';
+      
+      const x1 = PADDING.left + (i - 1) * gap + candleW / 2 + gap * 0.2;
+      const x2 = PADDING.left + i * gap + candleW / 2 + gap * 0.2;
+      
+      ctx.beginPath();
+      ctx.moveTo(x1, toY(prev.superTrend));
+      ctx.lineTo(x2, toY(curr.superTrend));
+      ctx.stroke();
     }
   }
 

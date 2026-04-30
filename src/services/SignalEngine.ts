@@ -143,7 +143,7 @@ export class SignalEngine {
         reasoning.push('RSI overbought (>70) — high pullback/correction risk');
       } else if (ind.rsi > 50 && currentPrice > (ind.ma50 ?? 0)) {
         score += 1;
-        reasoning.push('RSI > 50 with price above MA50 — strong bullish momentum');
+        reasoning.push('RSI > 50 with price above DEMA50 — strong bullish momentum');
       }
     }
 
@@ -164,39 +164,39 @@ export class SignalEngine {
       }
     }
 
-    // ── Price vs MA50 (weight: 2) ────────────────────────────────────────────
+    // ── Price vs DEMA50 (weight: 3) ───────────────────────────────────────────
     // Most important short-term trend indicator
     if (ind.ma50 !== null) {
       if (currentPrice > ind.ma50) {
-        score += 2;
-        reasoning.push(`Price above MA50 ($${ind.ma50.toFixed(0)}) — short-term bullish structure`);
+        score += 3;
+        reasoning.push(`Price above DEMA50 ($${ind.ma50.toFixed(0)}) — bullish structure confirmed`);
       } else {
-        score -= 2;
-        reasoning.push(`Price below MA50 ($${ind.ma50.toFixed(0)}) — short-term bearish structure`);
+        score -= 3;
+        reasoning.push(`Price below DEMA50 ($${ind.ma50.toFixed(0)}) — bearish structure confirmed`);
       }
     }
 
-    // ── Price vs MA200 (weight: 1) ───────────────────────────────────────────
+    // ── Price vs DEMA200 (weight: 1) ──────────────────────────────────────────
     // Long-term structure context
     if (ind.ma200 !== null) {
       if (currentPrice > ind.ma200) {
         score += 1;
-        reasoning.push(`Price above MA200 ($${ind.ma200.toFixed(0)}) — long-term bullish`);
+        reasoning.push(`Price above DEMA200 ($${ind.ma200.toFixed(0)}) — long-term bullish`);
       } else {
-        // Softer penalty: price below MA200 is bearish but can still trend up
+        // Softer penalty: price below DEMA200 is bearish but can still trend up
         score -= 1;
-        reasoning.push(`Price below MA200 ($${ind.ma200.toFixed(0)}) — long-term bearish context`);
+        reasoning.push(`Price below DEMA200 ($${ind.ma200.toFixed(0)}) — long-term bearish context`);
 
         // Golden/Death cross as additional context (not double-penalty)
         if (ind.ma50 !== null) {
           if (ind.ma50 > ind.ma200) {
             score += 1;
-            reasoning.push('Golden cross: MA50 > MA200 — recovery momentum building');
+            reasoning.push('Golden cross: DEMA50 > DEMA200 — recovery momentum building');
           } else {
-            // Only -1 instead of -2: death cross matters less when price > MA50
+            // Only -1 instead of -2: death cross matters less when price > DEMA50
             const softPenalty = currentPrice > ind.ma50 ? -0 : -1;
             score += softPenalty;
-            if (softPenalty < 0) reasoning.push('Death cross: MA50 < MA200 — long-term structure still weak');
+            if (softPenalty < 0) reasoning.push('Death cross: DEMA50 < DEMA200 — long-term structure still weak');
           }
         }
       }
@@ -212,6 +212,15 @@ export class SignalEngine {
         score -= 1;
         reasoning.push(`Price below DEMA(20) ($${ind.dema20.toFixed(0)}) — fast momentum bearish`);
       }
+    }
+
+    // ── SuperTrend (weight: 2) ───────────────────────────────────────────────
+    if (ind.superTrendDirection === 'up') {
+      score += 2;
+      reasoning.push('SuperTrend: Bullish (Buy signal confirmed)');
+    } else if (ind.superTrendDirection === 'down') {
+      score -= 2;
+      reasoning.push('SuperTrend: Bearish (Sell signal confirmed)');
     }
 
     // ── Bollinger Bands (weight: 1) ──────────────────────────────────────────
@@ -384,12 +393,12 @@ export class SignalEngine {
     const conditions: string[] = [];
 
     if (bias === 'long') {
-      if (ind.ma50 !== null) conditions.push(`Price closes below MA50 (${ind.ma50.toFixed(2)})`);
+      if (ind.ma50 !== null) conditions.push(`Price closes below DEMA50 (${ind.ma50.toFixed(2)})`);
       if (ind.supportLevel !== null) conditions.push(`Price breaks below support (${ind.supportLevel.toFixed(2)})`);
       conditions.push('Volume decreases significantly on next up move (low conviction)');
       if (ind.rsi !== null) conditions.push(`RSI crosses above 75 without new price high (divergence)`);
     } else if (bias === 'short') {
-      if (ind.ma50 !== null) conditions.push(`Price closes above MA50 (${ind.ma50.toFixed(2)})`);
+      if (ind.ma50 !== null) conditions.push(`Price closes above DEMA50 (${ind.ma50.toFixed(2)})`);
       if (ind.resistanceLevel !== null) conditions.push(`Price breaks above resistance (${ind.resistanceLevel.toFixed(2)})`);
       conditions.push('Volume surges on an up move (short squeeze risk)');
       if (ind.rsi !== null) conditions.push(`RSI drops below 25 without new price low (divergence)`);

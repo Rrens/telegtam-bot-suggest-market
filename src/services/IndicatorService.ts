@@ -105,8 +105,8 @@ export class IndicatorService {
   private static quickDirectionScore(ind: IndicatorResult): number {
     let score = 0;
     if (ind.rsi !== null) {
-      if (ind.rsi < 40) score++;
-      else if (ind.rsi > 60) score--;
+      if (ind.rsi > 60) score++; // Bullish momentum
+      else if (ind.rsi < 40) score--; // Bearish momentum
     }
     if (ind.macdLine !== null && ind.macdSignal !== null) {
       if (ind.macdLine > ind.macdSignal) score++;

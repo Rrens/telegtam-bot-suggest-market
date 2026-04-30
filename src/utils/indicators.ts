@@ -10,6 +10,7 @@ import {
   SMA,
   EMA,
   DEMA as dema,
+  ATR,
 } from 'technicalindicators';
 import { OHLCVCandle, IndicatorResult } from '../types';
 import { log } from './logger';
@@ -42,9 +43,9 @@ export function computeIndicators(candles: OHLCVCandle[]): IndicatorResult {
   });
   const lastMacd = macdValues.length > 0 ? macdValues[macdValues.length - 1] : null;
 
-  // MA50 / MA200
-  const ma50Values = SMA.calculate({ values: closes, period: 50 });
-  const ma200Values = candles.length >= 200 ? SMA.calculate({ values: closes, period: 200 }) : [];
+  // DEMA 50 / DEMA 200 (Switch from SMA for faster response)
+  const ma50Values = dema.calculate({ values: closes, period: 50 });
+  const ma200Values = candles.length >= 200 ? dema.calculate({ values: closes, period: 200 }) : [];
 
   const ma50 = ma50Values.length > 0 ? ma50Values[ma50Values.length - 1] : null;
   const ma200 = ma200Values.length > 0 ? ma200Values[ma200Values.length - 1] : null;
@@ -52,13 +53,20 @@ export function computeIndicators(candles: OHLCVCandle[]): IndicatorResult {
   const bbValues = BollingerBands.calculate({ values: closes, period: 20, stdDev: 2 });
   const lastBb = bbValues.length > 0 ? bbValues[bbValues.length - 1] : null;
 
-  // DEMA(20)
+  // DEMA(20) Manual Calculation: DEMA = 2*EMA - EMA(EMA)
   let lastDema: number | null = null;
   try {
-    const demaValues = dema.calculate({ values: closes, period: 20 });
-    lastDema = demaValues.length > 0 ? demaValues[demaValues.length - 1] : null;
+    const ema20 = EMA.calculate({ values: closes, period: 20 });
+    if (ema20.length > 20) {
+      const emaEma20 = EMA.calculate({ values: ema20, period: 20 });
+      if (emaEma20.length > 0) {
+        const lastEma = ema20[ema20.length - 1];
+        const lastEmaEma = emaEma20[emaEma20.length - 1];
+        lastDema = 2 * lastEma - lastEmaEma;
+      }
+    }
   } catch (e) {
-    log.warn('DEMA calculation failed or not supported by library');
+    log.warn('Manual DEMA calculation failed', { error: (e as Error).message });
   }
 
   // Volume spike: current volume > 2x 20-period average volume
@@ -69,6 +77,9 @@ export function computeIndicators(candles: OHLCVCandle[]): IndicatorResult {
 
   // Support & Resistance via pivot points (last 20 candles)
   const { support, resistance } = computeSupportResistance(highs, lows, closes, 20);
+
+  // SuperTrend (10, 3)
+  const { superTrend, superTrendDirection } = computeSuperTrend(candles, 10, 3);
 
   // Breakout detection
   const currentPrice = closes[closes.length - 1];
@@ -90,12 +101,79 @@ export function computeIndicators(candles: OHLCVCandle[]): IndicatorResult {
     bbMiddle: lastBb?.middle ?? null,
     bbLower: lastBb?.lower ?? null,
     dema20: lastDema,
+    superTrend,
+    superTrendDirection,
     volumeSpike,
     supportLevel: support,
     resistanceLevel: resistance,
     breakoutDetected,
     breakoutDirection,
   };
+}
+
+/**
+ * SuperTrend Indicator Calculation (Returns only the latest value)
+ */
+export function computeSuperTrend(candles: OHLCVCandle[], period: number, multiplier: number): { superTrend: number | null, superTrendDirection: 'up' | 'down' | null } {
+  const series = computeSuperTrendFull(candles, period, multiplier);
+  if (series.length === 0) return { superTrend: null, superTrendDirection: null };
+  return series[series.length - 1];
+}
+
+/**
+ * SuperTrend Indicator Calculation (Returns the full series for charting)
+ */
+export function computeSuperTrendFull(candles: OHLCVCandle[], period: number, multiplier: number): { superTrend: number | null, superTrendDirection: 'up' | 'down' | null }[] {
+  if (candles.length <= period) return [];
+
+  const atrValues = ATR.calculate({
+    high: candles.map(c => c.high),
+    low: candles.map(c => c.low),
+    close: candles.map(c => c.close),
+    period
+  });
+
+  const n = candles.length;
+  const startIdx = n - atrValues.length;
+  
+  let prevFinalUpper = 0;
+  let prevFinalLower = 0;
+  let prevST = 0;
+  const results: { superTrend: number | null, superTrendDirection: 'up' | 'down' | null }[] = [];
+
+  // We need to iterate to get the final values correctly
+  for (let i = 0; i < atrValues.length; i++) {
+    const candleIdx = startIdx + i;
+    const candle = candles[candleIdx];
+    const prevCandle = candles[candleIdx - 1];
+    const atr = atrValues[i];
+
+    const basicUpper = (candle.high + candle.low) / 2 + multiplier * atr;
+    const basicLower = (candle.high + candle.low) / 2 - multiplier * atr;
+
+    const finalUpper = (basicUpper < prevFinalUpper || (prevCandle && prevCandle.close > prevFinalUpper)) ? basicUpper : prevFinalUpper;
+    const finalLower = (basicLower > prevFinalLower || (prevCandle && prevCandle.close < prevFinalLower)) ? basicLower : prevFinalLower;
+
+    let currentST = 0;
+    if (prevST === prevFinalUpper) {
+      currentST = candle.close > finalUpper ? finalLower : finalUpper;
+    } else {
+      currentST = candle.close < finalLower ? finalUpper : finalLower;
+    }
+
+    const direction = candle.close > currentST ? 'up' : 'down';
+    
+    results.push({
+      superTrend: parseFloat(currentST.toFixed(8)),
+      superTrendDirection: direction
+    });
+
+    prevFinalUpper = finalUpper;
+    prevFinalLower = finalLower;
+    prevST = currentST;
+  }
+
+  return results;
 }
 
 /**
