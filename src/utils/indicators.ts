@@ -111,7 +111,7 @@ export function computeIndicators(candles: OHLCVCandle[]): IndicatorResult {
  * Calculate DEMA (Double Exponential Moving Average)
  * Formula: DEMA = 2*EMA - EMA(EMA)
  */
-function calculateDEMA(values: number[], period: number): number | null {
+export function calculateDEMA(values: number[], period: number): number | null {
   if (values.length < period * 2) return null; // Need enough data for stable double EMA
   try {
     const emaValues = EMA.calculate({ values, period });
@@ -126,6 +126,31 @@ function calculateDEMA(values: number[], period: number): number | null {
     return 2 * lastEma - lastEmaEma;
   } catch (e) {
     return null;
+  }
+}
+
+/**
+ * Calculate DEMA series for charting
+ */
+export function calculateDEMAFull(values: number[], period: number): (number | null)[] {
+  if (values.length < period) return new Array(values.length).fill(null);
+  try {
+    const emaValues = EMA.calculate({ values, period });
+    const emaEmaValues = EMA.calculate({ values: emaValues, period });
+    
+    const results: (number | null)[] = new Array(values.length).fill(null);
+    const emaOffset = values.length - emaValues.length;
+    const emaEmaOffset = emaValues.length - emaEmaValues.length;
+    
+    for (let i = 0; i < emaEmaValues.length; i++) {
+      const emaIdx = i + emaEmaOffset;
+      const valIdx = emaIdx + emaOffset;
+      results[valIdx] = 2 * emaValues[emaIdx] - emaEmaValues[i];
+    }
+    
+    return results;
+  } catch (e) {
+    return new Array(values.length).fill(null);
   }
 }
 
@@ -249,6 +274,8 @@ function emptyIndicators(): IndicatorResult {
     bbMiddle: null,
     bbLower: null,
     dema20: null,
+    superTrend: null,
+    superTrendDirection: null,
     volumeSpike: false,
     supportLevel: null,
     resistanceLevel: null,

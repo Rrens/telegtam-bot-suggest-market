@@ -61,7 +61,7 @@ export class SignalEngine {
     const { trend, tradeBias, confidence } = this.deriveSignalComponents(score);
 
     // 6. Risk management
-    const { stopLoss, takeProfit, riskRewardRatio, positionSizeAdvice } = this.computeRiskManagement(
+    const { stopLoss, takeProfit, takeProfits, riskRewardRatio, positionSizeAdvice } = this.computeRiskManagement(
       priceData.price,
       primaryIndicators,
       tradeBias,
@@ -95,6 +95,7 @@ export class SignalEngine {
       invalidationConditions,
       stopLoss,
       takeProfit,
+      takeProfits,
       riskRewardRatio,
       positionSizeAdvice,
       timeframe: '1d',
@@ -424,6 +425,7 @@ export class SignalEngine {
       indicators: {
         rsi: null, macdLine: null, macdSignal: null, macdHistogram: null,
         ma50: null, ma200: null, bbUpper: null, bbMiddle: null, bbLower: null,
+        dema20: null, superTrend: null, superTrendDirection: null,
         volumeSpike: false, supportLevel: null, resistanceLevel: null,
         breakoutDetected: false, breakoutDirection: null,
       },

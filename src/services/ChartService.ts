@@ -5,9 +5,9 @@
 
 import { createCanvas, SKRSContext2D } from '@napi-rs/canvas';
 import { OHLCVCandle, IndicatorResult } from '../types';
-import { SMA, RSI, DEMA as dema } from 'technicalindicators';
+import { SMA, RSI } from 'technicalindicators';
 import { log } from '../utils/logger';
-import { computeSuperTrendFull } from '../utils/indicators';
+import { computeSuperTrendFull, calculateDEMAFull } from '../utils/indicators';
 
 const WIDTH = 900;
 const HEIGHT = 650; // Increased height to accommodate RSI
@@ -44,13 +44,7 @@ export class ChartService {
       const ma50: (number | null)[] = [...new Array(n - ma50Raw.length).fill(null), ...ma50Raw];
 
       // Compute DEMA(20)
-      let demaLine: (number | null)[] = new Array(n).fill(null);
-      try {
-        const demaRaw = dema.calculate({ values: closes, period: 20 });
-        demaLine = [...new Array(n - demaRaw.length).fill(null), ...demaRaw];
-      } catch (e) {
-        log.warn('ChartService: DEMA plot failed');
-      }
+      const demaLine = calculateDEMAFull(closes, 20);
 
       // Compute RSI
       const rsiRaw = RSI.calculate({ values: closes, period: 14 });

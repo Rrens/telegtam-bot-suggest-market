@@ -42,9 +42,11 @@ async function recalcSignalsForTrackedSymbols(): Promise<void> {
 
     for (const symbol of symbols) {
       try {
-        // Bust cache to force recalculation
-        await cacheDel(cacheKeys.signal(symbol));
-        await SignalEngine.generate(symbol);
+        // Bust cache for all risk profiles to force recalculation
+        for (const profile of ['conservative', 'moderate', 'aggressive']) {
+          await cacheDel(cacheKeys.signal(symbol, profile));
+        }
+        await SignalEngine.generate(symbol, 'moderate');
         await new Promise((r) => setTimeout(r, 1000)); // throttle
         log.debug('Signal recalculated', { symbol });
       } catch (err) {
