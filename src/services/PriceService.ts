@@ -138,6 +138,25 @@ export class PriceService {
   }
 
   /**
+   * Dynamically search for the correct Yahoo symbol if the direct one fails.
+   */
+  private static async searchYahooSymbol(query: string): Promise<string | null> {
+    try {
+      const res = await axiosInstance.get(`https://query1.finance.yahoo.com/v1/finance/search?q=${query}`, {
+        timeout: 5000,
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+      });
+      const quotes = res.data?.quotes;
+      if (quotes && quotes.length > 0) {
+        return quotes[0].symbol;
+      }
+    } catch (err) {
+      log.warn('Yahoo symbol search failed', { query, error: (err as Error).message });
+    }
+    return null;
+  }
+
+  /**
    * Fetch stock/forex price from Yahoo Finance.
    */
   private static async fetchYahooPrice(symbol: string): Promise<PriceData> {
@@ -147,18 +166,31 @@ export class PriceService {
       if (!yahooSymbol.includes('-')) yahooSymbol += '-USD';
     }
 
+    try {
+      return await this.doFetchYahooPrice(yahooSymbol);
+    } catch (err) {
+      const suggestion = await this.searchYahooSymbol(symbol);
+      if (suggestion && suggestion !== yahooSymbol) {
+        log.info(`Yahoo fallback: found better symbol for ${symbol} -> ${suggestion}`);
+        return await this.doFetchYahooPrice(suggestion);
+      }
+      throw err;
+    }
+  }
+
+  private static async doFetchYahooPrice(yahooSymbol: string): Promise<PriceData> {
     const res = await axiosInstance.get(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1m&range=1d`, {
       timeout: 10000,
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
 
     const meta = res.data?.chart?.result?.[0]?.meta;
-    if (!meta) throw new Error(`Yahoo Finance: No data for ${symbol}`);
+    if (!meta) throw new Error(`Yahoo Finance: No data for ${yahooSymbol}`);
 
     return {
-      symbol: symbol.toUpperCase(),
+      symbol: yahooSymbol,
       price: meta.regularMarketPrice ?? 0,
-      change24h: 0, // Chart meta doesn't always have 24h change directly
+      change24h: 0,
       volume24h: meta.regularMarketVolume ?? 0,
       high24h: meta.regularMarketDayHigh,
       low24h: meta.regularMarketDayLow,
@@ -252,20 +284,25 @@ export class PriceService {
    */
   private static async fetchYahooOHLCV(symbol: string, limit: number, interval = '1d'): Promise<OHLCVCandle[]> {
     let yahooSymbol = symbol.toUpperCase();
-    
-    // Convert crypto BTCUSDT -> BTC-USD for Yahoo
     if (this.detectAssetType(symbol) === 'crypto') {
       yahooSymbol = yahooSymbol.replace('USDT', '-USD');
       if (!yahooSymbol.includes('-')) yahooSymbol += '-USD';
     }
 
-    // Map Binance intervals to Yahoo intervals
-    // Yahoo intervals: 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo
-    let yInterval = interval;
-    if (interval === '1h') yInterval = '1h';
-    if (interval === '4h') yInterval = '1h'; // Yahoo doesn't have 4h, use 1h as best effort
-    if (interval === '1d') yInterval = '1d';
+    try {
+      return await this.doFetchYahooOHLCV(yahooSymbol, limit, interval);
+    } catch (err) {
+      const suggestion = await this.searchYahooSymbol(symbol);
+      if (suggestion && suggestion !== yahooSymbol) {
+        return await this.doFetchYahooOHLCV(suggestion, limit, interval);
+      }
+      throw err;
+    }
+  }
 
+  private static async doFetchYahooOHLCV(yahooSymbol: string, limit: number, interval: string): Promise<OHLCVCandle[]> {
+    let yInterval = interval;
+    if (interval === '1h' || interval === '4h') yInterval = '1h';
     const range = yInterval === '1d' ? '1y' : '7d';
 
     const res = await axiosInstance.get(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=${yInterval}&range=${range}`, {
