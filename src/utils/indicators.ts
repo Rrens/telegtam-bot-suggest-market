@@ -9,7 +9,6 @@ import {
   BollingerBands,
   SMA,
   EMA,
-  DEMA as dema,
   ATR,
 } from 'technicalindicators';
 import { OHLCVCandle, IndicatorResult } from '../types';
@@ -43,12 +42,9 @@ export function computeIndicators(candles: OHLCVCandle[]): IndicatorResult {
   });
   const lastMacd = macdValues.length > 0 ? macdValues[macdValues.length - 1] : null;
 
-  // DEMA 50 / DEMA 200 (Switch from SMA for faster response)
-  const ma50Values = dema.calculate({ values: closes, period: 50 });
-  const ma200Values = candles.length >= 200 ? dema.calculate({ values: closes, period: 200 }) : [];
-
-  const ma50 = ma50Values.length > 0 ? ma50Values[ma50Values.length - 1] : null;
-  const ma200 = ma200Values.length > 0 ? ma200Values[ma200Values.length - 1] : null;
+  // DEMA 50 / DEMA 200 (Manual calculation since library lacks them)
+  const ma50 = calculateDEMA(closes, 50);
+  const ma200 = calculateDEMA(closes, 200);
 
   const bbValues = BollingerBands.calculate({ values: closes, period: 20, stdDev: 2 });
   const lastBb = bbValues.length > 0 ? bbValues[bbValues.length - 1] : null;
@@ -109,6 +105,28 @@ export function computeIndicators(candles: OHLCVCandle[]): IndicatorResult {
     breakoutDetected,
     breakoutDirection,
   };
+}
+
+/**
+ * Calculate DEMA (Double Exponential Moving Average)
+ * Formula: DEMA = 2*EMA - EMA(EMA)
+ */
+function calculateDEMA(values: number[], period: number): number | null {
+  if (values.length < period * 2) return null; // Need enough data for stable double EMA
+  try {
+    const emaValues = EMA.calculate({ values, period });
+    if (emaValues.length < period) return null;
+    
+    const emaEmaValues = EMA.calculate({ values: emaValues, period });
+    if (emaEmaValues.length === 0) return null;
+
+    const lastEma = emaValues[emaValues.length - 1];
+    const lastEmaEma = emaEmaValues[emaEmaValues.length - 1];
+
+    return 2 * lastEma - lastEmaEma;
+  } catch (e) {
+    return null;
+  }
 }
 
 /**
