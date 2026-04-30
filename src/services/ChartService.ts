@@ -37,14 +37,26 @@ export class ChartService {
       const volumes = data.map((c) => c.volume);
       const n = data.length;
 
-      // Compute MAs
-      const ma20Raw = SMA.calculate({ values: closes, period: 20 });
-      const ma50Raw = SMA.calculate({ values: closes, period: 50 });
-      const ma20: (number | null)[] = [...new Array(n - ma20Raw.length).fill(null), ...ma20Raw];
-      const ma50: (number | null)[] = [...new Array(n - ma50Raw.length).fill(null), ...ma50Raw];
+      // Compute MAs (Switching to DEMA to match analysis)
+      const dema20 = calculateDEMAFull(closes, 20);
+      const dema50 = calculateDEMAFull(closes, 50);
 
-      // Compute DEMA(20)
-      const demaLine = calculateDEMAFull(closes, 20);
+      // Price range calculation (Safe against empty arrays)
+      const allHighs = data.map((c) => c.high);
+      const allLows = data.map((c) => c.low);
+      
+      const maValues = [
+        ...(dema20.filter(v => v !== null) as number[]),
+        ...(dema50.filter(v => v !== null) as number[])
+      ];
+
+      const priceMax = Math.max(...allHighs, ...maValues);
+      const priceMin = Math.min(...allLows, ...maValues.length > 0 ? maValues : allLows);
+      
+      const priceRange = priceMax - priceMin;
+      const pricePad = priceRange > 0 ? priceRange * 0.1 : 1;
+      const yMax = priceMax + pricePad;
+      const yMin = Math.max(0, priceMin - pricePad);
 
       // Compute RSI
       const rsiRaw = RSI.calculate({ values: closes, period: 14 });
@@ -53,15 +65,6 @@ export class ChartService {
       // Compute SuperTrend
       const stFull = computeSuperTrendFull(candles, 10, 3);
       const superTrendSeries = [...new Array(n - stFull.length).fill(null), ...stFull];
-
-      // Price range
-      const allHighs = data.map((c) => c.high);
-      const allLows = data.map((c) => c.low);
-      const priceMax = Math.max(...allHighs, ...ma20.filter(Boolean) as number[], ...ma50.filter(Boolean) as number[]);
-      const priceMin = Math.min(...allLows);
-      const pricePad = (priceMax - priceMin) * 0.05;
-      const yMax = priceMax + pricePad;
-      const yMin = priceMin - pricePad;
 
       // Volume range
       const volMax = Math.max(...volumes);
@@ -129,11 +132,9 @@ export class ChartService {
         ctx.fillRect(x, bodyTop, candleW, bodyH);
       }
 
-      // ── MA20 line ──────────────────────────────────────────────────────────
-      this.drawLine(ctx, ma20, gap, candleW, toY, '#facc15', 1.5);
-
-      // ── DEMA20 line ────────────────────────────────────────────────────────
-      this.drawLine(ctx, demaLine, gap, candleW, toY, '#e879f9', 2);
+      // ── DEMA lines ──────────────────────────────────────────────────────────
+      this.drawLine(ctx, dema20, gap, candleW, toY, '#facc15', 1.5);
+      this.drawLine(ctx, dema50, gap, candleW, toY, '#60a5fa', 1.5);
 
       // ── SuperTrend line ───────────────────────────────────────────────────
       this.drawSuperTrend(ctx, superTrendSeries, gap, candleW, toY);

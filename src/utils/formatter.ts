@@ -64,9 +64,12 @@ export function formatSignal(signal: SignalResult): string {
     'Strong Bearish': '🔴',
   }[signal.trend] ?? '⬜';
 
-  const biasEmoji = signal.tradeBias === 'long' ? '📈' : signal.tradeBias === 'short' ? '📉' : '⏸';
-  const sentimentEmoji = signal.newsSentiment === 'positive' ? '(Positive)' : signal.newsSentiment === 'negative' ? '(Negative)' : '(Neutral)';
+  const rate = PriceService.getLastUsdIdrRate();
+  const score = signal.signalScore;
   const ind = signal.indicators;
+  const macdBullish = ind.macdLine != null && ind.macdSignal != null && ind.macdLine > ind.macdSignal;
+  const macdIcon = macdBullish ? '↑' : '↓';
+  const macdLabel = macdBullish ? 'Bullish' : 'Bearish';
 
   // 1. Header Section
   const header = [
@@ -77,31 +80,27 @@ export function formatSignal(signal: SignalResult): string {
 
   // 2. Data Section (Monospace Code Block)
   const dataLines = [
-    `Price: ${formatPrice(signal.price, signal.symbol)}`,
+    `Price: $${signal.price.toLocaleString()} (Rp${Math.round(signal.price * rate).toLocaleString()})`,
     `Trend: ${trendEmoji} ${signal.trend}`,
-    `Confidence: ${(signal.confidence ?? 0).toFixed(0)}%`,
-    `Score: ${signal.signalScore >= 0 ? '+' : ''}${signal.signalScore}`,
-    `Bias: ${biasEmoji} ${signal.tradeBias.toUpperCase()}`,
+    `Score: ${score >= 0 ? '+' : ''}${score} | Bias: ${signal.tradeBias.toUpperCase()}`,
     '',
     '── Technical Analysis ──',
-    ind.rsi != null ? `• RSI(14): ${ind.rsi.toFixed(1)} ${getRsiLabel(ind.rsi)}` : null,
-    ind.macdLine != null && ind.macdSignal != null ? `• MACD: ${ind.macdLine > ind.macdSignal ? '↑ Bullish' : '↓ Bearish'}` : null,
-    ind.ma50 != null ? `• DEMA50: ${formatPrice(ind.ma50, signal.symbol)} ${signal.price > ind.ma50 ? '✓' : '✗'}` : null,
-    ind.ma200 != null ? `• DEMA200: ${formatPrice(ind.ma200, signal.symbol)} ${signal.price > ind.ma200 ? '✓' : '✗'}` : null,
-    ind.dema20 != null ? `• DEMA20: ${formatPrice(ind.dema20, signal.symbol)} ${signal.price > ind.dema20 ? '✓' : '✗'}` : null,
-    ind.superTrend != null ? `• SuperTrend: ${ind.superTrendDirection?.toUpperCase() ?? 'N/A'}` : null,
-    ind.bbUpper != null && ind.bbLower != null ? `• BB: ${formatPrice(ind.bbLower, signal.symbol)}-${formatPrice(ind.bbUpper, signal.symbol)}` : null,
-    ind.supportLevel != null ? `• Support: ${formatPrice(ind.supportLevel, signal.symbol)}` : null,
-    ind.resistanceLevel != null ? `• Resistance: ${formatPrice(ind.resistanceLevel, signal.symbol)}` : null,
+    `• RSI(14): ${ind.rsi?.toFixed(1) ?? 'N/A'} (${getRsiLabel(ind.rsi ?? 50)})`,
+    `• MACD: ${macdIcon} ${macdLabel}`,
+    `• DEMA20:  $${ind.dema20?.toLocaleString() ?? 'N/A'}`,
+    `• DEMA50:  $${ind.ma50?.toLocaleString() ?? 'N/A'}`,
+    `• DEMA200: $${ind.ma200?.toLocaleString() ?? 'N/A'}`,
+    `• SuperTrend: ${ind.superTrendDirection?.toUpperCase() ?? 'N/A'} ($${ind.superTrend?.toLocaleString() ?? 'N/A'})`,
+    `• Bollinger: ${ind.bbLower?.toFixed(0) ?? 'N/A'} - ${ind.bbUpper?.toFixed(0) ?? 'N/A'}`,
     '',
     '── Risk Management ──',
-    signal.stopLoss != null ? `• SL: ${formatPrice(signal.stopLoss, signal.symbol)}` : null,
-    ...(signal.takeProfits || []).map((tp, i) => `• TP${i + 1}: ${formatPrice(tp, signal.symbol)}`),
-    `• R/R: 1:${(signal.riskRewardRatio ?? 0).toFixed(2)}`,
+    `• SL:  $${signal.stopLoss?.toLocaleString() ?? 'N/A'}`,
+    `• TP1: $${signal.takeProfits?.[0]?.toLocaleString() ?? 'N/A'}`,
+    `• R/R: ${signal.riskRewardRatio?.toFixed(2) ?? 'N/A'}`,
     `• Size: ${signal.positionSizeAdvice}`,
     '',
     '── Reasoning ──',
-    ...signal.reasoning.slice(0, 4).map(r => `• ${r.length > 40 ? r.slice(0, 37) + '...' : r}`),
+    ...signal.reasoning.slice(0, 3).map(r => `• ${r.length > 45 ? r.slice(0, 42) + '...' : r}`),
   ].filter(Boolean);
 
   const finalLines = [...dataLines];
