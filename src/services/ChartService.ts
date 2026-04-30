@@ -192,7 +192,7 @@ export class ChartService {
       // RSI Title
       ctx.fillStyle = '#818cf8';
       ctx.font = 'bold 11px sans-serif';
-      ctx.fillText(`RSI(14): ${ind.rsi?.toFixed(1) ?? 'N/A'}`, PADDING.left + 5, rsiBaseY - RSI_H + 12);
+      ctx.fillText(`RSI(14): ${indicators.rsi?.toFixed(1) ?? 'N/A'}`, PADDING.left + 5, rsiBaseY - RSI_H + 12);
 
       // ── X-axis labels (date) ───────────────────────────────────────────────
       ctx.fillStyle = '#6b7280';
