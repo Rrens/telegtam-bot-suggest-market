@@ -141,6 +141,18 @@ export class PriceService {
    * Dynamically search for the correct Yahoo symbol if the direct one fails.
    */
   private static async searchYahooSymbol(query: string): Promise<string | null> {
+    const upper = query.toUpperCase();
+    const manualMap: Record<string, string> = {
+      'XAUUSD': 'GC=F',
+      'GOLD': 'GC=F',
+      'XAGUSD': 'SI=F',
+      'SILVER': 'SI=F',
+      'WTI': 'CL=F',
+      'OIL': 'CL=F',
+    };
+
+    if (manualMap[upper]) return manualMap[upper];
+
     try {
       const res = await axiosInstance.get(`https://query1.finance.yahoo.com/v1/finance/search?q=${query}`, {
         timeout: 5000,

@@ -294,6 +294,20 @@ export class ChartService {
       return `https://www.tradingview.com/chart/?symbol=IDX:${stockSymbol}`;
     }
 
+    // Common commodities
+    const commodityMap: Record<string, string> = {
+      'XAUUSD': 'TVC:GOLD',
+      'GOLD': 'TVC:GOLD',
+      'XAGUSD': 'TVC:SILVER',
+      'SILVER': 'TVC:SILVER',
+      'WTI': 'TVC:USOIL',
+      'OIL': 'TVC:USOIL',
+      'GC=F': 'COMEX:GC1!',
+      'SI=F': 'COMEX:SI1!',
+      'CL=F': 'NYMEX:CL1!',
+    };
+    if (commodityMap[upper]) return `https://www.tradingview.com/chart/?symbol=${commodityMap[upper]}`;
+
     // Handle Crypto (Binance)
     const cryptoExchanges = ['USDT', 'BTC', 'ETH', 'BUSD', 'BNB'];
     const isExplicitCrypto = cryptoExchanges.some(ex => upper.endsWith(ex));
