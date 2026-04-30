@@ -117,8 +117,8 @@ export function formatSignal(signal: SignalResult): string {
   finalLines.push('', '── Conclusion ──');
   finalLines.push(buildConclusion(signal));
 
-  const dataBlock = `<code>${finalLines.join('\n')}</code>`;
-  const disclaimer = `\n\n<i>⚠ This is not financial advice.</i>`;
+  const dataBlock = `<pre><code class="language-python">${finalLines.join('\n')}</code></pre>`;
+  const disclaimer = `\n<i>⚠ This is not financial advice.</i>`;
 
   return header + dataBlock + disclaimer;
 }
