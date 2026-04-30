@@ -73,7 +73,7 @@ export const cacheKeys = {
   ohlcv: (symbol: string, timeframe: string) => `ohlcv:${symbol.toLowerCase()}:${timeframe}`,
   fundamental: (symbol: string) => `fundamental:${symbol.toLowerCase()}`,
   news: (symbol: string) => `news:${symbol.toLowerCase()}`,
-  signal: (symbol: string) => `signal:${symbol.toLowerCase()}`,
+  signal: (symbol: string, riskProfile: string) => `signal:${symbol.toLowerCase()}:${riskProfile}`,
 };
 
 // TTL constants (seconds)

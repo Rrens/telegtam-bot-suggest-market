@@ -23,7 +23,7 @@ export class SignalEngine {
    * @param riskProfile  User's risk profile (affects position size advice)
    */
   static async generate(symbol: string, riskProfile: RiskProfile = 'moderate'): Promise<SignalResult> {
-    const cacheKey = cacheKeys.signal(symbol);
+    const cacheKey = cacheKeys.signal(symbol, riskProfile);
     const cached = await cacheGet<SignalResult>(cacheKey);
     if (cached) return cached;
 
@@ -49,6 +49,7 @@ export class SignalEngine {
     // 4. Weighted scoring
     const { score, reasoning } = this.computeWeightedScore(
       primaryIndicators,
+      priceData.price,
       fundamentalData?.rating ?? null,
       newsItems,
       bullishCount,
@@ -119,6 +120,7 @@ export class SignalEngine {
    */
   private static computeWeightedScore(
     ind: IndicatorResult,
+    currentPrice: number,
     fundamentalRating: FundamentalRating | null,
     newsItems: { sentiment: SentimentLabel; sentimentScore: number }[],
     bullishTfCount: number,
@@ -132,16 +134,16 @@ export class SignalEngine {
     if (ind.rsi !== null) {
       if (ind.rsi < 30) {
         score += 2;
-        reasoning.push('RSI oversold (<30) — strong reversal potential');
-      } else if (ind.rsi < 40) {
+        reasoning.push('RSI oversold (<30) — high reversal potential');
+      } else if (ind.rsi < 45) {
         score += 1;
-        reasoning.push('RSI approaching oversold — mild bullish bias');
+        reasoning.push('RSI in recovery zone — potential dip buying opportunity');
       } else if (ind.rsi > 70) {
         score -= 2;
-        reasoning.push('RSI overbought (>70) — pullback/correction risk');
-      } else if (ind.rsi > 60) {
-        score -= 1;
-        reasoning.push('RSI elevated — momentum may be slowing');
+        reasoning.push('RSI overbought (>70) — high pullback/correction risk');
+      } else if (ind.rsi > 50 && currentPrice > (ind.ma50 ?? 0)) {
+        score += 1;
+        reasoning.push('RSI > 50 with price above MA50 — strong bullish momentum');
       }
     }
 
@@ -162,32 +164,53 @@ export class SignalEngine {
       }
     }
 
-    // ── MA50/MA200 (weight: 2) ───────────────────────────────────────────────
+    // ── Price vs MA50 (weight: 2) ────────────────────────────────────────────
+    // Most important short-term trend indicator
     if (ind.ma50 !== null) {
-      // Will need current price — use MA relationship
-      if (ind.ma200 !== null) {
-        if (ind.ma50 > ind.ma200) {
-          score += 2;
-          reasoning.push('Golden cross: MA50 > MA200 (long-term bullish structure)');
-        } else {
-          score -= 2;
-          reasoning.push('Death cross: MA50 < MA200 (long-term bearish structure)');
+      if (currentPrice > ind.ma50) {
+        score += 2;
+        reasoning.push(`Price above MA50 ($${ind.ma50.toFixed(0)}) — short-term bullish structure`);
+      } else {
+        score -= 2;
+        reasoning.push(`Price below MA50 ($${ind.ma50.toFixed(0)}) — short-term bearish structure`);
+      }
+    }
+
+    // ── Price vs MA200 (weight: 1) ───────────────────────────────────────────
+    // Long-term structure context
+    if (ind.ma200 !== null) {
+      if (currentPrice > ind.ma200) {
+        score += 1;
+        reasoning.push(`Price above MA200 ($${ind.ma200.toFixed(0)}) — long-term bullish`);
+      } else {
+        // Softer penalty: price below MA200 is bearish but can still trend up
+        score -= 1;
+        reasoning.push(`Price below MA200 ($${ind.ma200.toFixed(0)}) — long-term bearish context`);
+
+        // Golden/Death cross as additional context (not double-penalty)
+        if (ind.ma50 !== null) {
+          if (ind.ma50 > ind.ma200) {
+            score += 1;
+            reasoning.push('Golden cross: MA50 > MA200 — recovery momentum building');
+          } else {
+            // Only -1 instead of -2: death cross matters less when price > MA50
+            const softPenalty = currentPrice > ind.ma50 ? -0 : -1;
+            score += softPenalty;
+            if (softPenalty < 0) reasoning.push('Death cross: MA50 < MA200 — long-term structure still weak');
+          }
         }
       }
     }
 
-    // ── DEMA 20 (weight: 1) ──────────────────────────────────────────────────
+    // ── DEMA(20) vs Price (weight: 1) ────────────────────────────────────────
+    // Fast momentum: is price above or below the DEMA?
     if (ind.dema20 !== null) {
-      // We don't have current price here directly, but we can infer from indicators if needed.
-      // For now, let's compare DEMA to MA50 as a momentum proxy
-      if (ind.ma50 !== null) {
-        if (ind.dema20 > ind.ma50) {
-          score += 1;
-          reasoning.push('DEMA(20) > MA50: Short-term momentum is accelerating upward');
-        } else {
-          score -= 1;
-          reasoning.push('DEMA(20) < MA50: Short-term momentum is slowing down');
-        }
+      if (currentPrice > ind.dema20) {
+        score += 1;
+        reasoning.push(`Price above DEMA(20) ($${ind.dema20.toFixed(0)}) — fast momentum bullish`);
+      } else {
+        score -= 1;
+        reasoning.push(`Price below DEMA(20) ($${ind.dema20.toFixed(0)}) — fast momentum bearish`);
       }
     }
 
