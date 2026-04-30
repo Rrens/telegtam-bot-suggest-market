@@ -104,32 +104,23 @@ export function formatSignal(signal: SignalResult): string {
     ...signal.reasoning.slice(0, 4).map(r => `• ${r.length > 40 ? r.slice(0, 37) + '...' : r}`),
   ].filter(Boolean);
 
-  const dataBlock = `<code>${dataLines.join('\n')}</code>`;
-
-  // 3. News Section (Normal HTML for links)
-  let newsBlock = '';
+  const finalLines = [...dataLines];
+  
   if (signal.newsItems.length > 0) {
-    const newsItems = signal.newsItems.slice(0, 3).map(item => {
+    finalLines.push('', '── News Sentiment ──');
+    signal.newsItems.slice(0, 3).forEach(item => {
       const sIcon = item.sentiment === 'positive' ? '▲' : item.sentiment === 'negative' ? '▼' : '–';
-      return `${sIcon} <a href="${item.url}">${item.title.slice(0, 60)}…</a>`;
+      finalLines.push(`${sIcon} ${item.title.slice(0, 50)}...`);
     });
-    newsBlock = [
-      '',
-      `<b>── News Sentiment: ${sentimentEmoji} ──</b>`,
-      ...newsItems
-    ].join('\n');
   }
 
-  // 4. Conclusion & Disclaimer
-  const conclusion = [
-    '',
-    '<b>── Conclusion ──</b>',
-    escapeHtml(buildConclusion(signal)),
-    '',
-    '<i>⚠ This is not financial advice.</i>'
-  ].join('\n');
+  finalLines.push('', '── Conclusion ──');
+  finalLines.push(buildConclusion(signal));
 
-  return header + dataBlock + newsBlock + conclusion;
+  const dataBlock = `<code>${finalLines.join('\n')}</code>`;
+  const disclaimer = `\n\n<i>⚠ This is not financial advice.</i>`;
+
+  return header + dataBlock + disclaimer;
 }
 
 function getRsiLabel(rsi: number): string {
