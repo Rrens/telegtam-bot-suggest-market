@@ -49,6 +49,10 @@ export class BinanceWS {
    * Connect (or reconnect) to the Binance combined stream.
    */
   connect(): void {
+    if (!config.apis.binanceEnabled) {
+      log.info('BinanceWS: binance is disabled in config, skipping connection');
+      return;
+    }
     if (this.subscriptions.size === 0) {
       log.info('BinanceWS: no subscriptions, skipping connection');
       return;

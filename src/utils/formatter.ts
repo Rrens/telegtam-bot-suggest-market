@@ -80,11 +80,15 @@ export function formatSignal(signal: SignalResult): string {
 
   // 2. Data Section (Monospace Code Block)
   const dataLines = [
-    `Price:  $${signal.price.toLocaleString()} (Rp${Math.round(signal.price * rate).toLocaleString()})`,
+    `Price:  $${signal.price.toLocaleString()}`,
+    `        (Rp${Math.round(signal.price * rate).toLocaleString()})`,
+    '',
     `Trend:  ${trendEmoji} ${signal.trend}`,
     `Score:  ${score >= 0 ? '+' : ''}${score} | Bias: ${signal.tradeBias.toUpperCase()}`,
     '',
+    '',
     '── TECHNICAL ANALYSIS ──',
+    '',
     `• RSI(14):    ${ind.rsi?.toFixed(1) ?? 'N/A'} (${getRsiLabel(ind.rsi ?? 50)})`,
     `• MACD:       ${macdIcon} ${macdLabel}`,
     `• DEMA20:     $${ind.dema20?.toLocaleString() ?? 'N/A'}`,
@@ -93,13 +97,17 @@ export function formatSignal(signal: SignalResult): string {
     `• SuperTrend: ${ind.superTrendDirection?.toUpperCase() ?? 'N/A'} ($${ind.superTrend?.toLocaleString() ?? 'N/A'})`,
     `• Bollinger:  ${ind.bbLower?.toFixed(0) ?? 'N/A'} - ${ind.bbUpper?.toFixed(0) ?? 'N/A'}`,
     '',
+    '',
     '── RISK MANAGEMENT ──',
+    '',
     `• SL:   $${signal.stopLoss?.toLocaleString() ?? 'N/A'}`,
     `• TP1:  $${signal.takeProfits?.[0]?.toLocaleString() ?? 'N/A'}`,
     `• R/R:  ${signal.riskRewardRatio?.toFixed(2) ?? 'N/A'}`,
     `• Size: ${signal.positionSizeAdvice}`,
     '',
+    '',
     '── REASONING ──',
+    '',
     ...signal.reasoning.slice(0, 3).map(r => `• ${r.length > 45 ? r.slice(0, 42) + '...' : r}`),
   ].filter(Boolean);
 

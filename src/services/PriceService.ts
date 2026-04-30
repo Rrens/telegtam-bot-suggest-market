@@ -141,7 +141,13 @@ export class PriceService {
    * Fetch stock/forex price from Yahoo Finance.
    */
   private static async fetchYahooPrice(symbol: string): Promise<PriceData> {
-    const res = await axiosInstance.get(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol.toUpperCase()}?interval=1m&range=1d`, {
+    let yahooSymbol = symbol.toUpperCase();
+    if (this.detectAssetType(symbol) === 'crypto') {
+      yahooSymbol = yahooSymbol.replace('USDT', '-USD');
+      if (!yahooSymbol.includes('-')) yahooSymbol += '-USD';
+    }
+
+    const res = await axiosInstance.get(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1m&range=1d`, {
       timeout: 10000,
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
