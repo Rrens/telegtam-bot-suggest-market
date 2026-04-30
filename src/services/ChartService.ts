@@ -64,7 +64,9 @@ export class ChartService {
 
       // Compute SuperTrend
       const stFull = computeSuperTrendFull(candles, 10, 3);
-      const superTrendSeries = [...new Array(n - stFull.length).fill(null), ...stFull];
+      // Slice the last N values of superTrend to match chart data
+      const stSliced = stFull.slice(-n);
+      const superTrendSeries = [...new Array(n - stSliced.length).fill(null), ...stSliced];
 
       // Volume range
       const volMax = Math.max(...volumes);
