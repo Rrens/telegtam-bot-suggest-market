@@ -33,10 +33,12 @@ export const config = {
     coingeckoUrl: optional('COINGECKO_API_URL', 'https://api.coingecko.com/api/v3'),
     binanceWsUrl: optional('BINANCE_WS_URL', 'wss://stream.binance.com:9443/ws'),
     binanceRestUrl: optional('BINANCE_REST_URL', 'https://api.binance.com/api/v3'),
+    binanceEnabled: optional('BINANCE_ENABLED', 'true') === 'true',
     cryptoPanicKey: optional('CRYPTOPANIC_API_KEY', ''),
     cryptoPanicUrl: optional('CRYPTOPANIC_API_URL', 'https://cryptopanic.com/api/v1'),
     newsApiKey: optional('NEWSAPI_KEY', ''),
     newsApiUrl: optional('NEWSAPI_URL', 'https://newsapi.org/v2'),
+    proxyUrl: optional('PROXY_URL', ''),
   },
   app: {
     nodeEnv: optional('NODE_ENV', 'development'),

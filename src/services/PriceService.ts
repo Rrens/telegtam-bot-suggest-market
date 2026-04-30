@@ -10,6 +10,12 @@ import { cacheGet, cacheSet, cacheKeys, TTL } from '../cache/redis';
 import { withRetry } from '../utils/retry';
 import { log } from '../utils/logger';
 import { PriceData, OHLCVCandle, AssetType } from '../types';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+
+const axiosInstance = axios.create({
+  httpsAgent: config.apis.proxyUrl ? new HttpsProxyAgent(config.apis.proxyUrl) : undefined,
+  proxy: false, // disable axios built-in proxy as we use agent
+});
 
 export class PriceService {
   /**
@@ -44,7 +50,7 @@ export class PriceService {
     if (cached) return cached;
 
     let data: PriceData;
-    if (type === 'crypto') {
+    if (type === 'crypto' && config.apis.binanceEnabled) {
       const binanceSymbol = symbol.toUpperCase().endsWith('USDT') ? symbol.toUpperCase() : `${symbol.toUpperCase()}USDT`;
       try {
         data = await withRetry(() => this.fetchCryptoPriceBinance(binanceSymbol));
@@ -73,8 +79,8 @@ export class PriceService {
 
     try {
       const [tickerRes, statsRes] = await Promise.all([
-        axios.get(`${config.apis.binanceRestUrl}/ticker/price`, { params: { symbol: upper }, timeout: 30000 }),
-        axios.get(`${config.apis.binanceRestUrl}/ticker/24hr`, { params: { symbol: upper }, timeout: 30000 }),
+        axiosInstance.get(`${config.apis.binanceRestUrl}/ticker/price`, { params: { symbol: upper }, timeout: 30000 }),
+        axiosInstance.get(`${config.apis.binanceRestUrl}/ticker/24hr`, { params: { symbol: upper }, timeout: 30000 }),
       ]);
 
       const price = parseFloat(tickerRes.data.price);
@@ -101,7 +107,7 @@ export class PriceService {
   private static async fetchCoinGeckoPrice(symbol: string): Promise<PriceData> {
     // Convert BTCUSDT → bitcoin, ETHUSDT → ethereum, etc.
     const coinId = this.symbolToCoinGeckoId(symbol);
-    const res = await axios.get(`${config.apis.coingeckoUrl}/coins/markets`, {
+    const res = await axiosInstance.get(`${config.apis.coingeckoUrl}/coins/markets`, {
       params: {
         vs_currency: 'usd',
         ids: coinId,
@@ -135,7 +141,7 @@ export class PriceService {
    * Fetch stock/forex price from Yahoo Finance.
    */
   private static async fetchYahooPrice(symbol: string): Promise<PriceData> {
-    const res = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol.toUpperCase()}?interval=1m&range=1d`, {
+    const res = await axiosInstance.get(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol.toUpperCase()}?interval=1m&range=1d`, {
       timeout: 10000,
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
@@ -206,10 +212,10 @@ export class PriceService {
     if (cached && cached.length > 0) return cached;
 
     let candles: OHLCVCandle[];
-    if (type === 'crypto') {
+    if (type === 'crypto' && config.apis.binanceEnabled) {
       candles = await withRetry(() => this.fetchBinanceKlines(symbol.toUpperCase(), interval, limit));
     } else {
-      candles = await withRetry(() => this.fetchYahooOHLCV(symbol, limit));
+      candles = await withRetry(() => this.fetchYahooOHLCV(symbol, limit, interval));
     }
 
     await cacheSet(cacheKey, candles, TTL.OHLCV);
@@ -220,7 +226,7 @@ export class PriceService {
    * Binance klines (candlestick) data.
    */
   private static async fetchBinanceKlines(symbol: string, interval: string, limit: number): Promise<OHLCVCandle[]> {
-    const res = await axios.get(`${config.apis.binanceRestUrl}/klines`, {
+    const res = await axiosInstance.get(`${config.apis.binanceRestUrl}/klines`, {
       params: { symbol, interval, limit },
       timeout: 30000,
     });
@@ -236,20 +242,38 @@ export class PriceService {
   }
 
   /**
-   * Yahoo Finance historical OHLCV (stocks/forex).
+   * Yahoo Finance historical OHLCV (stocks/forex/crypto).
    */
-  private static async fetchYahooOHLCV(symbol: string, limit: number): Promise<OHLCVCandle[]> {
-    // interval: 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo
-    const res = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol.toUpperCase()}?interval=1d&range=1y`, {
+  private static async fetchYahooOHLCV(symbol: string, limit: number, interval = '1d'): Promise<OHLCVCandle[]> {
+    let yahooSymbol = symbol.toUpperCase();
+    
+    // Convert crypto BTCUSDT -> BTC-USD for Yahoo
+    if (this.detectAssetType(symbol) === 'crypto') {
+      yahooSymbol = yahooSymbol.replace('USDT', '-USD');
+      if (!yahooSymbol.includes('-')) yahooSymbol += '-USD';
+    }
+
+    // Map Binance intervals to Yahoo intervals
+    // Yahoo intervals: 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo
+    let yInterval = interval;
+    if (interval === '1h') yInterval = '1h';
+    if (interval === '4h') yInterval = '1h'; // Yahoo doesn't have 4h, use 1h as best effort
+    if (interval === '1d') yInterval = '1d';
+
+    const range = yInterval === '1d' ? '1y' : '7d';
+
+    const res = await axiosInstance.get(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=${yInterval}&range=${range}`, {
       timeout: 30000,
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
 
     const result = res.data?.chart?.result?.[0];
-    if (!result) throw new Error(`Yahoo Finance Chart: No data for ${symbol}`);
+    if (!result) throw new Error(`Yahoo Finance Chart: No data for ${yahooSymbol}`);
 
     const timestamps = result.timestamp;
     const quotes = result.indicators.quote[0];
+
+    if (!timestamps || !quotes) return [];
 
     return timestamps
       .map((t: number, i: number) => ({

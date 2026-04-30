@@ -9,6 +9,7 @@ import { config } from '../config';
 import { cacheSet, cacheKeys, TTL } from '../cache/redis';
 import { log } from '../utils/logger';
 import { sleep } from '../utils/retry';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 type PriceUpdateCallback = (symbol: string, price: number, volume: number) => void;
 
@@ -75,7 +76,9 @@ export class BinanceWS {
     }
 
     log.info('BinanceWS: connecting...', { url: this.streamUrl, streams: this.subscriptions.size });
-    this.ws = new WebSocket(this.streamUrl);
+    
+    const agent = config.apis.proxyUrl ? new HttpsProxyAgent(config.apis.proxyUrl) : undefined;
+    this.ws = new WebSocket(this.streamUrl, { agent });
 
     this.ws.on('open', () => {
       log.info('BinanceWS: connected');
