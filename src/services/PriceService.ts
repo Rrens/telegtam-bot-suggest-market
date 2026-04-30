@@ -73,8 +73,8 @@ export class PriceService {
 
     try {
       const [tickerRes, statsRes] = await Promise.all([
-        axios.get(`${config.apis.binanceRestUrl}/ticker/price`, { params: { symbol: upper }, timeout: 5000 }),
-        axios.get(`${config.apis.binanceRestUrl}/ticker/24hr`, { params: { symbol: upper }, timeout: 5000 }),
+        axios.get(`${config.apis.binanceRestUrl}/ticker/price`, { params: { symbol: upper }, timeout: 30000 }),
+        axios.get(`${config.apis.binanceRestUrl}/ticker/24hr`, { params: { symbol: upper }, timeout: 30000 }),
       ]);
 
       const price = parseFloat(tickerRes.data.price);
@@ -111,7 +111,7 @@ export class PriceService {
         sparkline: false,
         price_change_percentage: '24h',
       },
-      timeout: 8000,
+      timeout: 30000,
     });
 
     if (!res.data || res.data.length === 0) {
@@ -222,7 +222,7 @@ export class PriceService {
   private static async fetchBinanceKlines(symbol: string, interval: string, limit: number): Promise<OHLCVCandle[]> {
     const res = await axios.get(`${config.apis.binanceRestUrl}/klines`, {
       params: { symbol, interval, limit },
-      timeout: 10000,
+      timeout: 30000,
     });
 
     return (res.data as any[]).map((k: any) => ({
@@ -241,7 +241,7 @@ export class PriceService {
   private static async fetchYahooOHLCV(symbol: string, limit: number): Promise<OHLCVCandle[]> {
     // interval: 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo
     const res = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol.toUpperCase()}?interval=1d&range=1y`, {
-      timeout: 10000,
+      timeout: 30000,
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
 

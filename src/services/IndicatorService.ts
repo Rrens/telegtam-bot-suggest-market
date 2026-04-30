@@ -38,9 +38,9 @@ export class IndicatorService {
     const upper = symbol.toUpperCase();
 
     const [candles1h, candles4h, candles1d] = await Promise.allSettled([
-      PriceService.getOHLCV(upper, '1h', 500),
-      PriceService.getOHLCV(upper, '4h', 500),
-      PriceService.getOHLCV(upper, '1d', 500),
+      PriceService.getOHLCV(upper, '1h', 400),
+      PriceService.getOHLCV(upper, '4h', 400),
+      PriceService.getOHLCV(upper, '1d', 400),
     ]);
 
     const c1h = candles1h.status === 'fulfilled' ? candles1h.value : [];
