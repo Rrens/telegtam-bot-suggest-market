@@ -13,8 +13,8 @@ import { log } from './utils/logger';
 import { redis } from './cache/redis';
 
 import { PriceService } from './services/PriceService';
-
 import { startMarketWorker } from './workers/marketWorker';
+import { startWebServer } from './server/index';
 
 async function bootstrap(): Promise<void> {
   log.info('Starting Advanced Trading Assistant Bot...');
@@ -44,9 +44,7 @@ async function bootstrap(): Promise<void> {
   startMarketWorker(bot);
 
   // 4.5 Start Web Dashboard Server
-  import('./server').then(({ startWebServer }) => {
-    startWebServer();
-  });
+  startWebServer();
 
   // 5. Subscribe tracked crypto assets to Binance WebSocket
   await subscribeTrackedAssetsToWS();
