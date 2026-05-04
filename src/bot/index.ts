@@ -55,6 +55,7 @@ export function createBot(): Bot {
   // ── Channel Support ─────────────────────────────────────────────────────────
   // Allows commands like /info or /kurs to work when posted in a channel
   bot.on('channel_post:text', async (ctx, next) => {
+    log.info(`Received post from channel: ${ctx.chat.title} (ID: ${ctx.chat.id})`);
     const text = ctx.channelPost.text;
     if (text.startsWith('/info')) return handleInfo(ctx as any);
     if (text.startsWith('/kurs')) return handleKurs(ctx as any);
