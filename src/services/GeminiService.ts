@@ -21,7 +21,7 @@ export class GeminiService {
    */
   static async summarizeNews(symbol: string, title: string, summary: string): Promise<string | null> {
     try {
-      const model = this.getClient().getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
+      const model = this.getClient().getGenerativeModel({ model: 'gemini-flash-latest' });
       
       const prompt = `
         You are a financial analyst assistant for a Telegram Trading Bot.
@@ -84,7 +84,7 @@ export class GeminiService {
    */
   static async predict(signal: any): Promise<string> {
     try {
-      const model = this.getClient().getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
+      const model = this.getClient().getGenerativeModel({ model: 'gemini-flash-latest' });
       
       const prompt = `
         You are a world-class trading analyst. 
