@@ -9,13 +9,14 @@ export function startWebServer() {
   const app = express();
   const port = config.app.port || 3000;
 
-  app.use(cors());
+  const allowedOrigin = process.env.ALLOWED_ORIGIN || `http://localhost:${port}`;
+  app.use(cors({ origin: allowedOrigin }));
   app.use(express.json());
 
   // Security Middleware for API
   app.use('/api', (req, res, next) => {
     const token = req.query.token;
-    if (!token || token !== config.bot.adminId) {
+    if (!token || token !== config.app.dashboardSecret) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     next();
@@ -25,10 +26,15 @@ export function startWebServer() {
   app.get('/dashboard', (req, res) => {
     // Basic security: require an admin token in the query
     const token = req.query.token;
-    if (!token || token !== config.bot.adminId) {
+    if (!token || token !== config.app.dashboardSecret) {
       return res.status(401).send('<h1>Unauthorized</h1><p>Please provide your admin token.</p>');
     }
     res.sendFile(path.join(process.cwd(), 'public', 'dashboard.html'));
+  });
+
+  // Serve TMA HTML
+  app.get('/tma', (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'public', 'tma.html'));
   });
 
   // API: Get System Stats
@@ -74,6 +80,59 @@ export function startWebServer() {
       res.json(assets);
     } catch (err) {
       res.status(500).json({ error: 'Failed to fetch assets' });
+    }
+  });
+
+  // API: TMA Portfolio Data (No admin token required, just user_id for now)
+  app.get('/api/tma/portfolio', async (req, res) => {
+    try {
+      const userId = req.query.user_id;
+      if (!userId) return res.status(400).json({ error: 'Missing user_id' });
+
+      // Usually we'd want to verify the Telegram InitData hash here to prove it's really the user
+      // But for this simulation/demo we'll just trust the user_id
+
+      const assets = await db('assets').where({ user_id: userId });
+      let totalValue = 0;
+      let totalCost = 0;
+
+      const formattedAssets = await Promise.all(assets.map(async (a) => {
+        // We need the current price, but for speed we might want to use a cache or PriceService
+        // To avoid async issues in map without proper PriceService import, we'll try to require it
+        const { PriceService } = require('../services/PriceService');
+        try {
+          const { price } = await PriceService.getPrice(a.symbol);
+          const currentValue = a.amount * price;
+          const cost = a.amount * a.avg_price;
+          totalValue += currentValue;
+          totalCost += cost;
+          
+          return {
+            symbol: a.symbol,
+            amount: a.amount,
+            avgPrice: parseFloat(a.avg_price),
+            currentValue,
+            pnl: currentValue - cost
+          };
+        } catch (e) {
+          return {
+            symbol: a.symbol,
+            amount: a.amount,
+            avgPrice: parseFloat(a.avg_price),
+            currentValue: 0,
+            pnl: 0
+          };
+        }
+      }));
+
+      res.json({
+        totalValue,
+        pnl: totalValue - totalCost,
+        assets: formattedAssets
+      });
+
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to load portfolio' });
     }
   });
 

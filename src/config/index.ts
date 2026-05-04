@@ -21,7 +21,7 @@ export const config = {
     host: optional('DB_HOST', 'localhost'),
     port: parseInt(optional('DB_PORT', '5432')),
     user: optional('DB_USER', 'tradingbot'),
-    password: optional('DB_PASSWORD', 'tradingbot_secret'),
+    password: required('DB_PASSWORD'),
     database: optional('DB_NAME', 'tradingbot_db'),
     ssl: optional('DB_SSL', 'true') === 'true',
   },
@@ -45,6 +45,7 @@ export const config = {
     nodeEnv: optional('NODE_ENV', 'development'),
     logLevel: optional('LOG_LEVEL', 'info'),
     port: parseInt(optional('PORT', '3000')),
+    dashboardSecret: required('ADMIN_DASHBOARD_SECRET'),
   },
   intervals: {
     pricePollMs: parseInt(optional('PRICE_POLL_INTERVAL_MS', '30000')),

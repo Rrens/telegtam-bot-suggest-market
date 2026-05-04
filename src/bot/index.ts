@@ -24,7 +24,9 @@ import { handleDelAlert } from './commands/delalert';
 import { handleListAlerts } from './commands/listalerts';
 import { handleCredits } from './commands/credits';
 import { handleFlush } from './commands/flush';
+import { handleApp } from './commands/app';
 import { handleAdmin, handleBroadcast } from './commands/admin';
+import { handlePaperStatus, handlePaperBuy, handlePaperSell } from './commands/paper';
 import { activityLogger } from './middleware/activityLogger';
 import { log } from '../utils/logger';
 
@@ -52,10 +54,14 @@ export function createBot(): Bot {
   bot.command('info', handleInfo);
   bot.command('kurs', handleKurs);
   bot.command('help', handleHelp);
+  bot.command('app', handleApp);
   bot.command('flush', handleFlush);
   bot.command('credits', handleCredits);
   bot.command('admin', handleAdmin);
   bot.command('broadcast', handleBroadcast);
+  bot.command('paper', handlePaperStatus);
+  bot.command('paperbuy', handlePaperBuy);
+  bot.command('papersell', handlePaperSell);
 
   // ── Channel Support ─────────────────────────────────────────────────────────
   // Allows commands like /info or /kurs to work when posted in a channel
@@ -96,7 +102,11 @@ export function createBot(): Bot {
     { command: 'profile', description: 'Set risk profile & timeframe' },
     { command: 'info', description: 'Show system & channel information' },
     { command: 'kurs', description: 'Check USD/IDR exchange rate' },
+    { command: 'app', description: 'Open Telegram Mini App' },
     { command: 'help', description: 'Show help menu' },
+    { command: 'paper', description: 'View paper trading portfolio' },
+    { command: 'paperbuy', description: 'Buy asset in paper trading' },
+    { command: 'papersell', description: 'Sell asset in paper trading' },
   ]).catch((err) => log.warn('Failed to set bot commands', { error: err.message }));
 
   return bot;

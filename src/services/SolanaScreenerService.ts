@@ -22,6 +22,7 @@ export interface SolanaToken {
   marketCap: number | null;
   dexUrl: string;           // Link to DexScreener page
   pairAge: number;          // Age of pair in hours
+  rugCheckStatus?: string;  // 'Good' | 'Warning' | 'Danger' | 'Unknown'
 }
 
 // Screening criteria for "hidden gem" detection
@@ -110,10 +111,37 @@ export class SolanaScreenerService {
       // Sort by 6h change descending — biggest movers first
       gems.sort((a, b) => b.change6h - a.change6h);
 
-      return gems.slice(0, 20); // Return top 20 candidates
+      // Return top 5 candidates and enrich with RugCheck data
+      const topGems = gems.slice(0, 5);
+      
+      for (const gem of topGems) {
+        const rug = await this.checkRug(gem.address);
+        gem.rugCheckStatus = rug.status;
+      }
+      
+      return topGems;
     } catch (err) {
       log.warn('SolanaScreenerService: fetch failed', { error: (err as Error).message });
       return [];
+    }
+  }
+
+  /**
+   * Check token safety via RugCheck API
+   */
+  static async checkRug(address: string): Promise<{ score: number, status: string }> {
+    try {
+      const res = await axios.get(`https://api.rugcheck.xyz/v1/tokens/${address}/report/summary`, { timeout: 5000 });
+      const score = res.data?.score || 0;
+      let status = 'Unknown';
+      if (score < 1000) status = 'Good ✅';
+      else if (score < 5000) status = 'Warning ⚠️';
+      else status = 'Danger ❌';
+      
+      return { score, status };
+    } catch (err) {
+      log.warn('RugCheck API failed', { address, error: (err as Error).message });
+      return { score: 0, status: 'Unknown ❓' };
     }
   }
 
@@ -166,6 +194,7 @@ export class SolanaScreenerService {
       `📊 Volume 24h: <b>${formatUsd(token.volume24h)}</b>`,
       token.marketCap ? `💎 Market Cap: <b>${formatUsd(token.marketCap)}</b>` : '',
       `🕒 Token Age: <b>${token.pairAge}h</b>`,
+      `🛡️ RugCheck: <b>${token.rugCheckStatus || 'Unknown ❓'}</b>`,
       ``,
       `🔑 <b>Contract Address:</b>`,
       `<code>${token.address}</code>`,

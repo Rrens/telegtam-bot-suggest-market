@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Trading Bot Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #1e293b);
+            --text-color: var(--tg-theme-text-color, #f8fafc);
+            --hint-color: var(--tg-theme-hint-color, #94a3b8);
+            --btn-color: var(--tg-theme-button-color, #3b82f6);
+            --btn-text-color: var(--tg-theme-button-text-color, #ffffff);
+            --card-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-weight: 800;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--hint-color);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background-color: var(--btn-color);
+            color: var(--btn-text-color);
+            text-align: center;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            border: none;
+            margin-top: 20px;
+            font-size: 1rem;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .asset-name {
+            font-weight: 600;
+        }
+
+        .asset-pnl {
+            font-weight: 800;
+        }
+
+        .positive { color: #34d399; }
+        .negative { color: #ef4444; }
+
+    </style>
+</head>
+<body>
+
+    <h1 id="greeting">Loading...</h1>
+
+    <div class="card">
+        <div class="stat-label">Total Portfolio Value</div>
+        <div class="stat-value" id="portValue">$-.--</div>
+        <div class="stat-label" style="margin-top: 8px;">24h PnL</div>
+        <div class="stat-value positive" style="font-size: 1.2rem;" id="portPnl">$-.--</div>
+    </div>
+
+    <div class="card">
+        <div class="stat-label" style="margin-bottom: 12px;">Your Assets</div>
+        <div id="assetsList">
+            <div style="color: var(--hint-color); text-align: center; padding: 20px 0;">
+                Loading assets...
+            </div>
+        </div>
+    </div>
+
+    <button class="btn" id="closeBtn">Close App</button>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const user = tg.initDataUnsafe?.user;
+        const userId = user?.id;
+
+        if (user) {
+            document.getElementById('greeting').innerText = `Hello, ${user.first_name}!`;
+        } else {
+            document.getElementById('greeting').innerText = `Hello, Trader!`;
+        }
+
+        // Fetch data from our bot's API
+        async function loadData() {
+            if (!userId) return;
+            
+            try {
+                const res = await fetch(`/api/tma/portfolio?user_id=${userId}`);
+                const data = await res.json();
+                
+                document.getElementById('portValue').innerText = `$${data.totalValue.toFixed(2)}`;
+                
+                const pnlEl = document.getElementById('portPnl');
+                pnlEl.innerText = `${data.pnl >= 0 ? '+' : ''}$${data.pnl.toFixed(2)}`;
+                pnlEl.className = data.pnl >= 0 ? 'stat-value positive' : 'stat-value negative';
+
+                let html = '';
+                if (data.assets.length === 0) {
+                    html = '<div style="color: var(--hint-color); text-align: center; padding: 20px 0;">No assets found.</div>';
+                } else {
+                    data.assets.forEach(a => {
+                        const isPos = a.pnl >= 0;
+                        html += `
+                            <div class="list-item">
+                                <div>
+                                    <div class="asset-name">${a.symbol}</div>
+                                    <div class="stat-label">${a.amount} @ $${a.avgPrice.toFixed(2)}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div class="asset-name">$${a.currentValue.toFixed(2)}</div>
+                                    <div class="asset-pnl ${isPos ? 'positive' : 'negative'}">
+                                        ${isPos ? '+' : ''}$${a.pnl.toFixed(2)}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                document.getElementById('assetsList').innerHTML = html;
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('assetsList').innerHTML = '<div style="color: var(--hint-color); text-align: center;">Error loading data</div>';
+            }
+        }
+
+        document.getElementById('closeBtn').addEventListener('click', () => {
+            tg.close();
+        });
+
+        // Initialize
+        tg.ready();
+        if (userId) {
+            loadData();
+        }
+    </script>
+</body>
+</html>

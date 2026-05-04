@@ -52,7 +52,7 @@ export async function handleAdmin(ctx: CommandContext<Context>): Promise<void> {
     // Add a button to open the Web Dashboard
     // Note: User should configure BASE_URL in .env (e.g., http://1.2.3.4:3000)
     const baseUrl = process.env.BASE_URL || `http://localhost:${config.app.port || 3000}`;
-    const dashboardUrl = `${baseUrl}/dashboard?token=${config.bot.adminId}`;
+    const dashboardUrl = `${baseUrl}/dashboard?token=${config.app.dashboardSecret}`;
 
     const keyboard = {
       inline_keyboard: [
@@ -91,7 +91,10 @@ export async function handleBroadcast(ctx: CommandContext<Context>): Promise<voi
     let successCount = 0;
     let failCount = 0;
 
-    const broadcastText = `📢 <b>PENGUMUMAN ADMIN</b>\n\n${message}`;
+    // Escape HTML to prevent injection
+    const escapeHtml = (unsafe: string) => unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    const safeMessage = escapeHtml(message);
+    const broadcastText = `📢 <b>PENGUMUMAN ADMIN</b>\n\n${safeMessage}`;
 
     for (const user of users) {
       try {
