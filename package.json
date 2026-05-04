@@ -18,8 +18,10 @@
     "axios": "^1.7.9",
     "bullmq": "^5.45.0",
     "cheerio": "^1.2.0",
+    "cors": "^2.8.6",
     "crypto-js": "^4.2.0",
     "dotenv": "^16.4.7",
+    "express": "^5.2.1",
     "grammy": "^1.31.0",
     "https-proxy-agent": "^5.0.1",
     "ioredis": "^5.4.2",
@@ -38,6 +40,8 @@
     "ws": "^8.18.2"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/luxon": "^3.4.2",
     "@types/node": "^22.10.7",

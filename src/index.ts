@@ -43,6 +43,11 @@ async function bootstrap(): Promise<void> {
   startSignalWorker();
   startMarketWorker(bot);
 
+  // 4.5 Start Web Dashboard Server
+  import('./server').then(({ startWebServer }) => {
+    startWebServer();
+  });
+
   // 5. Subscribe tracked crypto assets to Binance WebSocket
   await subscribeTrackedAssetsToWS();
 
