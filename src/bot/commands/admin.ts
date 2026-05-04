@@ -8,6 +8,7 @@ export async function handleAdmin(ctx: CommandContext<Context>): Promise<void> {
 
   // Simple security check (only allow specific admin IDs)
   if (!config.bot.adminId || userId !== config.bot.adminId) {
+    log.warn('Unauthorized admin access attempt', { userId, expectedAdminId: config.bot.adminId });
     // If not admin, don't even acknowledge the command exists for security
     return;
   }
