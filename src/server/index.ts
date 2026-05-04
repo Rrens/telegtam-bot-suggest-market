@@ -12,6 +12,15 @@ export function startWebServer() {
   app.use(cors());
   app.use(express.json());
 
+  // Security Middleware for API
+  app.use('/api', (req, res, next) => {
+    const token = req.query.token;
+    if (!token || token !== config.bot.adminId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    next();
+  });
+
   // Serve static HTML dashboard
   app.get('/dashboard', (req, res) => {
     // Basic security: require an admin token in the query

@@ -154,54 +154,67 @@
     </div>
 
     <script>
+        // Get token from current URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+
         async function fetchStats() {
             try {
-                const res = await fetch('/api/stats');
+                const res = await fetch(`/api/stats?token=${token}`);
                 const data = await res.json();
                 document.getElementById('statUsers').innerText = data.users;
                 document.getElementById('statAssets').innerText = data.assets;
                 document.getElementById('statSignals').innerText = data.signals;
                 document.getElementById('statChats').innerText = data.chats;
             } catch (err) {
-                console.error(err);
+                console.error('Stats fetch error:', err);
             }
         }
 
         async function fetchChats() {
             try {
-                const res = await fetch('/api/chats');
+                const res = await fetch(`/api/chats?token=${token}`);
                 const logs = await res.json();
                 
                 const tbody = document.getElementById('chatTableBody');
                 tbody.innerHTML = '';
                 
+                if (logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No activity logs found.</td></tr>';
+                    return;
+                }
+
                 logs.forEach(log => {
                     const date = new Date(log.created_at).toLocaleString();
                     const badgeClass = log.type || 'message';
                     
-                    tbody.innerHTML += \`
+                    tbody.innerHTML += `
                         <tr>
-                            <td style="color:var(--text-muted); font-size:0.9rem;">\${date}</td>
-                            <td><strong>\${log.username || log.user_id}</strong></td>
-                            <td><span class="badge \${badgeClass}">\${log.type}</span></td>
-                            <td class="content">\${log.content}</td>
+                            <td style="color:var(--text-muted); font-size:0.9rem;">${date}</td>
+                            <td><strong>${log.username || log.user_id}</strong></td>
+                            <td><span class="badge ${badgeClass}">${log.type}</span></td>
+                            <td class="content">${log.content}</td>
                         </tr>
-                    \`;
+                    `;
                 });
             } catch (err) {
-                console.error(err);
+                console.error('Chats fetch error:', err);
             }
         }
 
         // Init
-        fetchStats();
-        fetchChats();
-        
-        // Auto refresh every 10 seconds
-        setInterval(() => {
+        if (token) {
             fetchStats();
             fetchChats();
-        }, 10000);
+            
+            // Auto refresh every 10 seconds
+            setInterval(() => {
+                fetchStats();
+                fetchChats();
+            }, 10000);
+        } else {
+            alert('Admin token is missing in the URL!');
+        }
     </script>
 </body>
 </html>

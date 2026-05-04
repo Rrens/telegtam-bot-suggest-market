@@ -466,6 +466,7 @@ export class SignalEngine {
         risk_reward_ratio: signal.riskRewardRatio,
       }).returning('id');
 
+      log.info('Signal persisted to DB', { id: row?.id, symbol: signal.symbol });
       return row?.id ?? null;
     } catch (err) {
       log.error('Failed to persist signal', { error: (err as Error).message });

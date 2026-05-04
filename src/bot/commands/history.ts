@@ -4,7 +4,12 @@ import { formatHistory } from '../../utils/formatter';
 
 // Usage: /history <symbol>
 export async function handleHistory(ctx: CommandContext<Context>): Promise<void> {
-  const symbol = ctx.match?.trim().toUpperCase();
+  let symbol = ctx.match?.trim().toUpperCase() ?? '';
+  
+  // Apply the same symbol formatting as /predict
+  if (symbol.length === 4 && !symbol.includes('.') && !symbol.endsWith('USDT')) {
+    symbol = `${symbol}.JK`;
+  }
 
   if (!symbol) {
     await ctx.reply('Usage: /history &lt;symbol&gt;\nExample: /history BTCUSDT', { parse_mode: 'HTML' });
