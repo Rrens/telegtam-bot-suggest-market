@@ -1,4 +1,5 @@
 import { PriceService } from './PriceService';
+import { SignalEngine } from './SignalEngine';
 import { log } from '../utils/logger';
 import { formatPrice, formatPct } from '../utils/formatter';
 import { sendNotification } from '../utils/notifier';
@@ -6,55 +7,65 @@ import { Bot } from 'grammy';
 import { redis } from '../cache/redis';
 
 export class MarketService {
-  // Top assets to monitor
-  private static readonly TOP_CRYPTO = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT', 'LINKUSDT'];
-  private static readonly TOP_STOCKS_INDO = ['BBCA.JK', 'BBRI.JK', 'TLKM.JK', 'ASII.JK', 'BMRI.JK', 'GOTO.JK', 'AMRT.JK', 'BBNI.JK'];
+  // Top assets to monitor for auto-signals
+  private static readonly TOP_CRYPTO = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT', 'LINKUSDT', 'AVAXUSDT', 'NEARUSDT'];
+  private static readonly TOP_STOCKS_INDO = ['BBCA.JK', 'BBRI.JK', 'TLKM.JK', 'ASII.JK', 'BMRI.JK', 'GOTO.JK'];
   
-  private static readonly VOLATILITY_THRESHOLD = 4.5; // Alert if change > 4.5%
-
   /**
-   * Scan top markets and send alerts to channel if significant movement is detected.
+   * Scan top markets using SignalEngine and broadcast high-confidence setups.
    */
   static async scanMarkets(bot: Bot): Promise<void> {
-    log.info('MarketService: scanning top markets...');
+    log.info('MarketService: running automated screener...');
     
     const allSymbols = [...this.TOP_CRYPTO, ...this.TOP_STOCKS_INDO];
     
     for (const symbol of allSymbols) {
       try {
-        const data = await PriceService.getPrice(symbol);
-        const change = data.change24h;
+        // Generate a fresh signal for moderate profile
+        const signal = await SignalEngine.generate(symbol, 'moderate');
         
-        // Cooldown check to avoid repeated alerts for the same move (4 hours)
-        const cdKey = `market_alert_cd:${symbol}`;
-        const lastChange = await redis.get(cdKey);
-        
-        // If we already alerted on a similar change (within 1%), skip
-        if (lastChange && Math.abs(parseFloat(lastChange) - change) < 1.0) {
-          continue;
-        }
+        // Target high-conviction setups only
+        const isStrongSetup = (signal.trend === 'Strong Bullish' || signal.trend === 'Strong Bearish');
+        const isHighConfidence = signal.confidence >= 70;
 
-        if (Math.abs(change) >= this.VOLATILITY_THRESHOLD) {
-          const direction = change > 0 ? '🚀 MOONING' : '📉 DUMPING';
-          const emoji = change > 0 ? '🟢' : '🔴';
+        if (isStrongSetup && isHighConfidence) {
+          // Cooldown check (don't alert the same symbol's trend more than once every 6 hours)
+          const cdKey = `screener_cd:${symbol}:${signal.trend}`;
+          const recentlyAlerted = await redis.get(cdKey);
+          
+          if (recentlyAlerted) {
+            continue; // Skip, already alerted this trend recently
+          }
+
+          const direction = signal.trend === 'Strong Bullish' ? '🚀 BUY ALERT' : '📉 SELL ALERT';
+          const emoji = signal.trend === 'Strong Bullish' ? '🟢' : '🔴';
           
           const message = [
-            `${direction} <b>Market Update: ${symbol}</b>`,
-            `--------------------------------------`,
-            `Price: <b>${formatPrice(data.price)}</b>`,
-            `24h Change: <b>${emoji} ${formatPct(change)}</b>`,
-            `--------------------------------------`,
-            `<i>Top market monitoring alert</i>`
+            `🚨 <b>AUTO-SCREENER VIP SIGNAL</b> 🚨`,
+            ``,
+            `${direction}: <b>${symbol}</b>`,
+            `Trend: ${emoji} <b>${signal.trend}</b> (Conf: ${signal.confidence}%)`,
+            `Price: ${formatPrice(signal.price)}`,
+            ``,
+            `<b>Technical Setup:</b>`,
+            ...signal.reasoning.slice(0, 2).map(r => `• ${r}`),
+            ``,
+            `<i>💡 Ketik /predict ${symbol.replace('USDT', '').replace('.JK', '')} untuk analisis lengkap + AI.</i>`
           ].join('\n');
 
+          // Send to 'system' channel/admin
           await sendNotification(bot, 'system', message, { pin: true });
           
-          // Save this change to cooldown for 4 hours
-          await redis.setex(cdKey, 14400, change.toString());
-          log.info('Market alert broadcasted', { symbol, change });
+          // Set 6-hour cooldown for this specific symbol+trend combination
+          await redis.setex(cdKey, 21600, 'alerted');
+          log.info('Screener alert broadcasted', { symbol, trend: signal.trend });
         }
+        
+        // Small delay to prevent API rate limits
+        await new Promise(r => setTimeout(r, 2000));
+        
       } catch (err) {
-        log.warn('MarketService: failed to scan symbol', { symbol, error: (err as Error).message });
+        log.warn('MarketService: failed to screen symbol', { symbol, error: (err as Error).message });
       }
     }
   }

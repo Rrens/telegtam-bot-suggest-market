@@ -9,6 +9,7 @@ import { startPriceWorker, subscribeTrackedAssetsToWS } from './workers/priceWor
 import { startNewsWorker } from './workers/newsWorker';
 import { startAlertWorker } from './workers/alertWorker';
 import { startSignalWorker } from './workers/signalWorker';
+import { startSolanaScreenerWorker } from './workers/solanaScreenerWorker';
 import { log } from './utils/logger';
 import { redis } from './cache/redis';
 
@@ -42,6 +43,7 @@ async function bootstrap(): Promise<void> {
   startAlertWorker(bot);
   startSignalWorker();
   startMarketWorker(bot);
+  startSolanaScreenerWorker(bot); // 🚀 Solana meme coin gem screener
 
   // 4.5 Start Web Dashboard Server
   startWebServer();

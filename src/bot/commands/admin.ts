@@ -69,3 +69,50 @@ export async function handleAdmin(ctx: CommandContext<Context>): Promise<void> {
     await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, '❌ Failed to load dashboard.');
   }
 }
+
+export async function handleBroadcast(ctx: CommandContext<Context>): Promise<void> {
+  const userId = ctx.from!.id.toString();
+
+  // Security check
+  if (!config.bot.adminId || userId !== config.bot.adminId) {
+    return;
+  }
+
+  const message = ctx.match?.trim();
+  if (!message) {
+    await ctx.reply('Usage: /broadcast &lt;pesan HTML&gt;\nContoh: /broadcast Halo semua, server sedang <b>maintenance</b>', { parse_mode: 'HTML' });
+    return;
+  }
+
+  const loadingMsg = await ctx.reply('📢 Broadcasting message...');
+  
+  try {
+    const users = await db('users').select('id');
+    let successCount = 0;
+    let failCount = 0;
+
+    const broadcastText = `📢 <b>PENGUMUMAN ADMIN</b>\n\n${message}`;
+
+    for (const user of users) {
+      try {
+        await ctx.api.sendMessage(user.id, broadcastText, { parse_mode: 'HTML' });
+        successCount++;
+      } catch (err) {
+        failCount++;
+      }
+      // Delay 50ms to respect Telegram rate limits (max 30 msgs/sec)
+      await new Promise(r => setTimeout(r, 50));
+    }
+
+    await ctx.api.editMessageText(
+      ctx.chat!.id, 
+      loadingMsg.message_id, 
+      `✅ <b>Broadcast Selesai!</b>\n\nBerhasil dikirim ke: ${successCount} user\nGagal (blokir bot): ${failCount} user`,
+      { parse_mode: 'HTML' }
+    );
+    log.info('Admin broadcasted message', { successCount, failCount });
+  } catch (err) {
+    log.error('Broadcast failed', { error: (err as Error).message });
+    await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, '❌ Failed to broadcast message.');
+  }
+}

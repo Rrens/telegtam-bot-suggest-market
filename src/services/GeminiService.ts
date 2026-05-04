@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { config } from '../config';
 import { log } from '../utils/logger';
 import { redis } from '../cache/redis';
+import { FearGreedService } from './FearGreedService';
 
 export class GeminiService {
   private static genAI: GoogleGenerativeAI | null = null;
@@ -85,6 +86,8 @@ export class GeminiService {
   static async predict(signal: any): Promise<string> {
     try {
       const model = this.getClient().getGenerativeModel({ model: 'gemini-flash-latest' });
+      const fgData = await FearGreedService.getIndex();
+      const fgContext = fgData ? `- Global Market Psychology (Fear & Greed Index): ${fgData.value}/100 (${fgData.classification})` : '';
       
       const prompt = `
         You are a world-class trading analyst. 
@@ -93,6 +96,7 @@ export class GeminiService {
         - Price: ${signal.price}
         - Indicators: ${JSON.stringify(signal.indicators)}
         - Sentiment: ${signal.sentiment}
+        ${fgContext}
         
         Task:
         Provide a structured expert verdict in Indonesian with the following sections:
