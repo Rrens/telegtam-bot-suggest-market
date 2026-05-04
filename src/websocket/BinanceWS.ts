@@ -82,7 +82,7 @@ export class BinanceWS {
     log.info('BinanceWS: connecting...', { url: this.streamUrl, streams: this.subscriptions.size });
     
     const agent = config.apis.proxyUrl ? new HttpsProxyAgent(config.apis.proxyUrl) : undefined;
-    this.ws = new WebSocket(this.streamUrl, { agent });
+    this.ws = new WebSocket(this.streamUrl, { agent: agent as any });
 
     this.ws.on('open', () => {
       log.info('BinanceWS: connected');
