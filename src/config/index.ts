@@ -15,6 +15,7 @@ export const config = {
   bot: {
     token: required('BOT_TOKEN'),
     channelId: optional('TELEGRAM_CHANNEL_ID', ''),
+    adminId: optional('TELEGRAM_ADMIN_ID', ''),
   },
   db: {
     host: optional('DB_HOST', 'localhost'),

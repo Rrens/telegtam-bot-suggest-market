@@ -24,12 +24,15 @@ import { handleDelAlert } from './commands/delalert';
 import { handleListAlerts } from './commands/listalerts';
 import { handleCredits } from './commands/credits';
 import { handleFlush } from './commands/flush';
+import { handleAdmin } from './commands/admin';
+import { activityLogger } from './middleware/activityLogger';
 import { log } from '../utils/logger';
 
 export function createBot(): Bot {
   const bot = new Bot(config.bot.token);
 
   // ── Middleware ──────────────────────────────────────────────────────────────
+  bot.use(activityLogger());
   bot.use(rateLimiter());
 
   // ── Commands ────────────────────────────────────────────────────────────────
@@ -51,6 +54,7 @@ export function createBot(): Bot {
   bot.command('help', handleHelp);
   bot.command('flush', handleFlush);
   bot.command('credits', handleCredits);
+  bot.command('admin', handleAdmin);
 
   // ── Channel Support ─────────────────────────────────────────────────────────
   // Allows commands like /info or /kurs to work when posted in a channel

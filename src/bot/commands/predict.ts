@@ -80,7 +80,14 @@ export async function handlePredict(ctx: CommandContext<Context>): Promise<void>
 
         await ctx.api.deleteMessage(ctx.chat!.id, aiLoadingMsg.message_id).catch(() => {});
 
-        const aiMessage = `🤖 <b>AI Prediction — ${symbol}</b>\n<i>Powered by Gemini</i>\n\n${aiText}\n\n<i>⚠ AI predictions are probabilistic and not financial advice.</i>`;
+        const aiMessage = [
+          `🤖 <b>AI Prediction — ${symbol}</b>`,
+          `<i>Powered by Gemini Flash</i>`,
+          `--------------------------------------`,
+          aiText,
+          `--------------------------------------`,
+          `<i>⚠ Sinyal AI bersifat probabilistik. Bukan saran finansial.</i>`
+        ].join('\n');
         await ctx.reply(aiMessage, {
           parse_mode: 'HTML',
           link_preview_options: { is_disabled: true },

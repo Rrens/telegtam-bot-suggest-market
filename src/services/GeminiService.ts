@@ -95,8 +95,13 @@ export class GeminiService {
         - Sentiment: ${signal.sentiment}
         
         Task:
-        Provide a 3-sentence expert verdict in Indonesian. 
-        Be specific about whether the entry is good and what to watch out for.
+        Provide a structured expert verdict in Indonesian with the following sections:
+        
+        📝 <b>Analisis:</b> (1-2 sentences about current trend/indicators)
+        🎯 <b>Strategi:</b> (1-2 sentences about best entry/exit points)
+        ⚠️ <b>Risiko:</b> (1 sentence about what to watch out for)
+
+        Use HTML tags like <b> and <i> as needed. Keep it concise.
       `;
 
       const result = await model.generateContent(prompt);
