@@ -25,7 +25,8 @@ npm run migrate
 
 # 5. Restart proses di PM2
 echo "♻️ Me-restart bot di PM2..."
-pm2 startOrRestart ecosystem.config.js
+pm2 delete trading-bot 2>/dev/null || true
+pm2 start ecosystem.config.js
 
 echo "--------------------------------------"
 echo "✅ Update selesai! Bot sudah berjalan."
