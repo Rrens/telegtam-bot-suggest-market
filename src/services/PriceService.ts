@@ -202,7 +202,7 @@ export class PriceService {
     return {
       symbol: yahooSymbol,
       price: meta.regularMarketPrice ?? 0,
-      change24h: 0,
+      change24h: meta.regularMarketChangePercent ?? 0,
       volume24h: meta.regularMarketVolume ?? 0,
       high24h: meta.regularMarketDayHigh,
       low24h: meta.regularMarketDayLow,

@@ -119,7 +119,7 @@ export class AlertService {
     if (!this.bot) return;
 
     try {
-      await sendNotification(this.bot, alert.user_id, message);
+      await sendNotification(this.bot, alert.user_id, message, { pin: true });
 
       // Deactivate alert after triggering (one-shot)
       await db('alerts').where({ id: alert.id }).update({

@@ -19,12 +19,19 @@ export async function sendNotification(
   // 1. Try Channel first if configured
   if (channelId) {
     try {
-      await bot.api.sendMessage(channelId, message, {
+      const sentMsg = await bot.api.sendMessage(channelId, message, {
         parse_mode: 'HTML',
         ...options,
       });
       sentToChannel = true;
       log.debug('Notification sent to channel', { channelId });
+
+      // Pin if requested
+      if (options.pin) {
+        await bot.api.pinChatMessage(channelId, sentMsg.message_id).catch(e => 
+          log.warn('Failed to pin message in channel', { error: e.message })
+        );
+      }
     } catch (err) {
       log.warn('Failed to send notification to channel, falling back to user DM', {
         channelId,

@@ -33,12 +33,14 @@ async function bootstrap(): Promise<void> {
 
   // 3. Create and configure bot
   const bot = createBot();
+  const { startMarketWorker } = await import('./workers/marketWorker');
 
   // 4. Start background workers
   startPriceWorker();
   startNewsWorker(bot);
   startAlertWorker(bot);
   startSignalWorker();
+  startMarketWorker(bot);
 
   // 5. Subscribe tracked crypto assets to Binance WebSocket
   await subscribeTrackedAssetsToWS();
