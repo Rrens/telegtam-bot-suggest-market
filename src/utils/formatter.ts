@@ -108,7 +108,7 @@ export function formatSignal(signal: SignalResult): string {
     '',
     '── REASONING ──',
     '',
-    ...signal.reasoning.slice(0, 3).map(r => `• ${r.length > 45 ? r.slice(0, 42) + '...' : r}`),
+    ...signal.reasoning.slice(0, 3).map(r => `• ${escapeHtml(r.length > 45 ? r.slice(0, 42) + '...' : r)}`),
   ].filter(Boolean);
 
   const finalLines = [...dataLines];
@@ -117,7 +117,7 @@ export function formatSignal(signal: SignalResult): string {
     finalLines.push('', '── News Sentiment ──');
     signal.newsItems.slice(0, 3).forEach(item => {
       const sIcon = item.sentiment === 'positive' ? '▲' : item.sentiment === 'negative' ? '▼' : '–';
-      finalLines.push(`${sIcon} ${item.title.slice(0, 50)}...`);
+      finalLines.push(`${sIcon} ${escapeHtml(item.title.slice(0, 50))}...`);
     });
   }
 
