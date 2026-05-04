@@ -80,8 +80,11 @@ export class SignalEngine {
       ? this.aggregateNewsSentiment(newsItems)
       : null;
 
+    const type = PriceService.detectAssetType(symbol);
+    const normalizedSymbol = type === 'crypto' ? PriceService.normalizeCryptoSymbol(symbol) : symbol.toUpperCase();
+
     const signal: SignalResult = {
-      symbol: symbol.toUpperCase(),
+      symbol: normalizedSymbol,
       price: priceData.price,
       trend,
       confidence,
@@ -478,8 +481,11 @@ export class SignalEngine {
    * Retrieve signal history for a symbol (most recent first).
    */
   static async getHistory(symbol: string, limit = 10): Promise<DbSignal[]> {
+    const type = PriceService.detectAssetType(symbol);
+    const searchSymbol = type === 'crypto' ? PriceService.normalizeCryptoSymbol(symbol) : symbol.toUpperCase();
+
     return db('signals')
-      .where('symbol', symbol.toUpperCase())
+      .where('symbol', searchSymbol)
       .orderBy('created_at', 'desc')
       .limit(limit);
   }
