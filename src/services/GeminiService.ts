@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { config } from '../config';
 import { log } from '../utils/logger';
+import { redis } from '../cache/redis';
 
 export class GeminiService {
   private static genAI: GoogleGenerativeAI | null = null;
