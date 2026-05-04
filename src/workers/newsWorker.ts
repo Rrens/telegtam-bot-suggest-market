@@ -49,7 +49,18 @@ export function startNewsWorker(bot: Bot): void {
     for (const item of items) {
       if (!item.title || !item.url) continue;
 
+      // --- Relevance Filter ---
+      const cleanSymbol = symbol.toUpperCase().split('.')[0].replace('USDT', '');
       const text = `${item.title} ${item.summary ?? ''}`;
+      const isRelevant = text.toUpperCase().includes(cleanSymbol) || 
+                         (cleanSymbol === 'BTC' && text.toLowerCase().includes('bitcoin')) ||
+                         (cleanSymbol === 'ETH' && text.toLowerCase().includes('ethereum'));
+      
+      if (!isRelevant) {
+        log.debug('News skipped: Not relevant to symbol', { symbol, title: item.title });
+        continue;
+      }
+
       const { label, score } = scoreText(text);
 
       let impact = 'Neutral market impact expected.';
@@ -103,7 +114,17 @@ export function startNewsWorker(bot: Bot): void {
       if (onCooldown) continue;
 
       try {
-        const msg = formatNewsBroadcast(symbol, item);
+        let msg = formatNewsBroadcast(symbol, item);
+        
+        // Add AI Insight if API key is available
+        const { GeminiService } = await import('../services/GeminiService');
+        if (config.gemini.apiKey) {
+          const aiInsight = await GeminiService.summarizeNews(symbol, item.title, item.summary || '');
+          if (aiInsight) {
+            msg += `\n\n${aiInsight}`;
+          }
+        }
+
         await bot.api.sendMessage(config.bot.channelId, msg, { 
           parse_mode: 'HTML',
           link_preview_options: { is_disabled: true } 

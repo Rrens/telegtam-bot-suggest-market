@@ -13,6 +13,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@napi-rs/canvas": "^0.1.57",
     "axios": "^1.7.9",
     "bullmq": "^5.45.0",

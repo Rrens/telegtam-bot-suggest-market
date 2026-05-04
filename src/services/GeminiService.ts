@@ -1,131 +1,87 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// GeminiService: AI-powered market prediction using Google Gemini API.
-// Access is restricted to allowed Telegram user IDs only.
-// ─────────────────────────────────────────────────────────────────────────────
-
-import axios from 'axios';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { config } from '../config';
 import { log } from '../utils/logger';
-import { SignalResult } from '../types';
 
 export class GeminiService {
-  /**
-   * Check if a userId is allowed to access AI predictions.
-   */
-  static isAllowed(userId: string | number): boolean {
-    const allowed = config.gemini.allowedUserIds;
-    if (allowed.length === 0) return false;
-    return allowed.includes(String(userId));
+  private static genAI: GoogleGenerativeAI | null = null;
+
+  private static getClient(): GoogleGenerativeAI {
+    if (!this.genAI) {
+      if (!config.gemini.apiKey) {
+        throw new Error('GEMINI_API_KEY is not configured');
+      }
+      this.genAI = new GoogleGenerativeAI(config.gemini.apiKey);
+    }
+    return this.genAI;
   }
 
   /**
-   * Generate an AI market prediction using Gemini.
-   * Sends a structured prompt built from signal data.
+   * Summarize a news item and provide market context.
    */
-  static async predict(signal: SignalResult): Promise<string> {
-    const apiKey = config.gemini.apiKey;
-    if (!apiKey) throw new Error('GEMINI_API_KEY is not configured');
+  static async summarizeNews(symbol: string, title: string, summary: string): Promise<string | null> {
+    try {
+      const model = this.getClient().getGenerativeModel({ model: 'gemini-1.5-flash' });
+      
+      const prompt = `
+        You are a financial analyst assistant for a Telegram Trading Bot.
+        Analyze the following news for the asset "${symbol}":
+        
+        Title: ${title}
+        Summary: ${summary}
+        
+        Task:
+        1. Provide a very concise summary (max 2 sentences) in Indonesian.
+        2. Explain the direct implication for the asset's price (Bullish/Bearish/Neutral) and why.
+        3. Keep the tone professional but easy to understand.
+        
+        Output format (Indonesian):
+        💡 <b>AI Insight:</b> [Your summary here]
+        📈 <b>Impact:</b> [Your implication analysis]
+      `;
 
-    const prompt = this.buildPrompt(signal);
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-    const res = await axios.post(
-      url,
-      {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 600,
-        },
-      },
-      { timeout: 20000 }
-    );
-
-    const text: string =
-      res.data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-
-    if (!text) throw new Error('Gemini returned empty response');
-
-    return text.trim();
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text().trim();
+    } catch (err) {
+      log.warn('GeminiService: failed to summarize news', { symbol, error: (err as Error).message });
+      return null;
+    }
   }
 
   /**
-   * Build a structured prompt from signal data for Gemini.
+   * Check if a user is allowed to use AI features.
    */
-  private static buildPrompt(signal: SignalResult): string {
-    const ind = signal.indicators;
-    const rsiLine = ind.rsi != null ? `RSI(14): ${ind.rsi.toFixed(1)}` : '';
-    const macdLine =
-      ind.macdLine != null && ind.macdSignal != null
-        ? `MACD: ${ind.macdLine > ind.macdSignal ? 'Bullish crossover' : 'Bearish crossover'}`
-        : '';
-    const ma50Line = ind.ma50 != null ? `MA50: ${ind.ma50.toFixed(2)}` : '';
-    const ma200Line =
-      ind.ma200 != null ? `MA200: ${ind.ma200.toFixed(2)}` : '';
-    const demaLine =
-      ind.dema20 != null ? `DEMA(20): ${ind.dema20.toFixed(2)}` : '';
-    const bbLine =
-      ind.bbLower != null && ind.bbUpper != null
-        ? `Bollinger Bands: ${ind.bbLower.toFixed(2)} – ${ind.bbUpper.toFixed(2)}`
-        : '';
-    const supportLine =
-      ind.supportLevel != null
-        ? `Support: ${ind.supportLevel.toFixed(2)}`
-        : '';
-    const resistanceLine =
-      ind.resistanceLevel != null
-        ? `Resistance: ${ind.resistanceLevel.toFixed(2)}`
-        : '';
+  static isAllowed(userId: string): boolean {
+    // If no specific IDs are set, allow everyone (or you can restrict it)
+    if (config.gemini.allowedUserIds.length === 0) return true;
+    return config.gemini.allowedUserIds.includes(userId);
+  }
 
-    const indicators = [
-      rsiLine,
-      macdLine,
-      ma50Line,
-      ma200Line,
-      demaLine,
-      bbLine,
-      supportLine,
-      resistanceLine,
-    ]
-      .filter(Boolean)
-      .join('\n');
+  /**
+   * Generate a full AI market prediction based on signal data.
+   */
+  static async predict(signal: any): Promise<string> {
+    try {
+      const model = this.getClient().getGenerativeModel({ model: 'gemini-1.5-flash' });
+      
+      const prompt = `
+        You are a world-class trading analyst. 
+        Analyze the following signal data for ${signal.symbol}:
+        - Trend: ${signal.trend} (Confidence: ${signal.confidence}%)
+        - Price: ${signal.price}
+        - Indicators: ${JSON.stringify(signal.indicators)}
+        - Sentiment: ${signal.sentiment}
+        
+        Task:
+        Provide a 3-sentence expert verdict in Indonesian. 
+        Be specific about whether the entry is good and what to watch out for.
+      `;
 
-    const tpLines =
-      signal.takeProfits && signal.takeProfits.length > 0
-        ? signal.takeProfits
-            .map((tp, i) => `TP${i + 1}: ${tp.toFixed(4)}`)
-            .join(', ')
-        : signal.takeProfit != null
-        ? `TP: ${signal.takeProfit.toFixed(4)}`
-        : 'N/A';
-
-    return `You are an expert quantitative trading analyst. Analyze the following market data and provide a concise AI-powered prediction.
-
-Asset: ${signal.symbol}
-Current Price: ${signal.price}
-Technical Trend: ${signal.trend} (Score: ${signal.signalScore})
-Trade Bias: ${signal.tradeBias}
-Confidence: ${signal.confidence}%
-Fundamental Rating: ${signal.fundamentalRating ?? 'N/A'}
-News Sentiment: ${signal.newsSentiment ?? 'N/A'}
-
-Technical Indicators:
-${indicators}
-
-Risk Management:
-Stop Loss: ${signal.stopLoss?.toFixed(4) ?? 'N/A'}
-${tpLines}
-
-System Reasoning:
-${signal.reasoning.slice(0, 5).join('\n')}
-
-Based on this data, provide your AI prediction covering:
-1. Your overall market outlook for ${signal.symbol} in the next 1–7 days
-2. Key risks to watch out for
-3. Entry strategy recommendation (when/how to enter)
-4. One specific insight that the technical indicators alone might be missing
-
-Keep your response concise (max 5 short paragraphs), use plain language suitable for Telegram, and do NOT use markdown headers or bullet symbols—use plain text only. End with a one-sentence conviction summary.`;
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text().trim();
+    } catch (err) {
+      throw new Error(`AI Prediction failed: ${(err as Error).message}`);
+    }
   }
 }
