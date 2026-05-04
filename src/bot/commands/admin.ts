@@ -49,7 +49,21 @@ export async function handleAdmin(ctx: CommandContext<Context>): Promise<void> {
       `<i>Dashboard generated at ${new Date().toLocaleTimeString()}</i>`
     ].join('\n');
 
-    await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, message, { parse_mode: 'HTML' });
+    // Add a button to open the Web Dashboard
+    // Note: User should configure BASE_URL in .env (e.g., http://1.2.3.4:3000)
+    const baseUrl = process.env.BASE_URL || `http://localhost:${config.app.port || 3000}`;
+    const dashboardUrl = `${baseUrl}/dashboard?token=${config.bot.adminId}`;
+
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '🌐 Open Web Dashboard', url: dashboardUrl }]
+      ]
+    };
+
+    await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, message, { 
+      parse_mode: 'HTML',
+      reply_markup: keyboard 
+    });
   } catch (err) {
     log.error('Admin command failed', { error: (err as Error).message });
     await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, '❌ Failed to load dashboard.');
