@@ -78,10 +78,10 @@ export const cacheKeys = {
 
 // TTL constants (seconds)
 export const TTL = {
-  PRICE_CRYPTO: 30,
-  PRICE_STOCK: 60,
-  OHLCV: 300,       // 5 minutes
-  FUNDAMENTAL: 3600, // 1 hour
-  NEWS: 300,         // 5 minutes
-  SIGNAL: 180,       // 3 minutes
+  PRICE_CRYPTO: 300,  // 5 minutes
+  PRICE_STOCK: 300,   // 5 minutes
+  OHLCV: 300,         // 5 minutes
+  FUNDAMENTAL: 3600,  // 1 hour
+  NEWS: 300,          // 5 minutes
+  SIGNAL: 300,        // 5 minutes
 };

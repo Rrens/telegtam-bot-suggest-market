@@ -74,7 +74,7 @@ export function formatSignal(signal: SignalResult): string {
   // 1. Header Section
   const header = [
     `📊 <b>${signal.symbol.toUpperCase()} Analysis</b>`,
-    `<i>${new Date(signal.timestamp).toUTCString()}</i>`,
+    `<i>${formatWibTime(signal.timestamp)}</i>`,
     ''
   ].join('\n');
 
