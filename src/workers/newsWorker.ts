@@ -12,6 +12,7 @@ import { config } from '../config';
 import { scoreText } from '../utils/sentiment';
 import { formatNewsBroadcast } from '../utils/formatter';
 import { NewsItem } from '../types';
+import { GeminiService } from '../services/GeminiService';
 
 const FETCH_QUEUE = 'news-fetch';
 const PROCESS_QUEUE = 'news-process';
@@ -117,7 +118,6 @@ export function startNewsWorker(bot: Bot): void {
         let msg = formatNewsBroadcast(symbol, item);
         
         // Add AI Insight if API key is available
-        const { GeminiService } = await import('../services/GeminiService');
         if (config.gemini.apiKey) {
           const aiInsight = await GeminiService.summarizeNews(symbol, item.title, item.summary || '');
           if (aiInsight) {
