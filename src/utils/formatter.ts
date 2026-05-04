@@ -255,9 +255,12 @@ export function formatHistory(symbol: string, signals: DbSignal[]): string {
 
   signals.forEach((s) => {
     const biasIcon = s.trade_bias === 'long' ? '📈' : s.trade_bias === 'short' ? '📉' : '⏸';
+    const confidence = Number(s.confidence);
+    const score = Number(s.signal_score);
+    
     lines.push(
-      `${biasIcon} <b>${s.trend}</b> — Confidence: ${s.confidence.toFixed(0)}%`,
-      `   Score: ${s.signal_score >= 0 ? '+' : ''}${s.signal_score} | ${new Date(s.created_at).toLocaleDateString()}`
+      `${biasIcon} <b>${s.trend}</b> — Confidence: ${confidence.toFixed(0)}%`,
+      `   Score: ${score >= 0 ? '+' : ''}${score} | ${new Date(s.created_at).toLocaleDateString()}`
     );
   });
 

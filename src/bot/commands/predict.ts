@@ -82,7 +82,6 @@ export async function handlePredict(ctx: CommandContext<Context>): Promise<void>
 
         const aiMessage = [
           `🤖 <b>AI Prediction — ${symbol}</b>`,
-          `<i>Powered by Gemini Flash</i>`,
           `--------------------------------------`,
           aiText,
           `--------------------------------------`,
