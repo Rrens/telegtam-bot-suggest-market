@@ -14,6 +14,8 @@ import { redis } from './cache/redis';
 
 import { PriceService } from './services/PriceService';
 
+import { startMarketWorker } from './workers/marketWorker';
+
 async function bootstrap(): Promise<void> {
   log.info('Starting Advanced Trading Assistant Bot...');
 
@@ -33,7 +35,6 @@ async function bootstrap(): Promise<void> {
 
   // 3. Create and configure bot
   const bot = createBot();
-  const { startMarketWorker } = await import('./workers/marketWorker');
 
   // 4. Start background workers
   startPriceWorker();
