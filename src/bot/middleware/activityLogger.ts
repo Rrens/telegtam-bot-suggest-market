@@ -16,8 +16,13 @@ export function activityLogger() {
       try {
         const userId = ctx.from?.id.toString();
         const username = ctx.from?.username;
-        const text = ctx.message?.text || ctx.callbackQuery?.data || 'non-text message';
+        let text = ctx.message?.text || ctx.callbackQuery?.data || 'non-text message';
         const type = ctx.message?.text?.startsWith('/') ? 'command' : (ctx.callbackQuery ? 'callback' : 'message');
+        
+        // Redact command arguments for privacy (MED-04)
+        if (type === 'command') {
+          text = text.split(' ')[0]; 
+        }
         
         if (!userId) return;
 

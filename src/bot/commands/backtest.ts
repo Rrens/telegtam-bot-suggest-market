@@ -21,7 +21,7 @@ export async function handleBacktest(ctx: CommandContext<Context>): Promise<void
     await ctx.api.editMessageText(
       ctx.chat!.id,
       loadingMsg.message_id,
-      `Backtest failed for <b>${symbol}</b>: ${(err as Error).message}`,
+      `Backtest failed for <b>${symbol}</b>.`,
       { parse_mode: 'HTML' }
     );
   }

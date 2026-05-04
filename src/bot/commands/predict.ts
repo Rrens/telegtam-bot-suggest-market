@@ -111,11 +111,11 @@ export async function handlePredict(ctx: CommandContext<Context>): Promise<void>
       await ctx.api.editMessageText(
         ctx.chat!.id,
         loadingMsg.message_id,
-        `Failed to analyze <b>${symbol}</b>: ${(err as Error).message}\n\nPlease verify the symbol and try again.`,
+        `Failed to analyze <b>${symbol}</b>. Please verify the symbol and try again.`,
         { parse_mode: 'HTML' }
       );
     } catch {
-      await ctx.reply(`Failed to analyze <b>${symbol}</b>: ${(err as Error).message}`);
+      await ctx.reply(`Failed to analyze <b>${symbol}</b>.`);
     }
     log.error('Predict command failed', { userId, symbol, error: (err as Error).message });
   }

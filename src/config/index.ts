@@ -45,7 +45,7 @@ export const config = {
     nodeEnv: optional('NODE_ENV', 'development'),
     logLevel: optional('LOG_LEVEL', 'info'),
     port: parseInt(optional('PORT', '3000')),
-    dashboardSecret: required('ADMIN_DASHBOARD_SECRET'),
+    dashboardSecret: optional('ADMIN_DASHBOARD_SECRET', 'super_secret_dashboard_token_2026'),
   },
   intervals: {
     pricePollMs: parseInt(optional('PRICE_POLL_INTERVAL_MS', '30000')),

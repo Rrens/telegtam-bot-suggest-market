@@ -95,7 +95,7 @@ export async function handleAdd(ctx: CommandContext<Context>): Promise<void> {
     await ctx.api.editMessageText(
       ctx.chat!.id,
       loadingMsg.message_id,
-      `Could not validate symbol <b>${symbol}</b>. Please check the symbol and try again.\n\nError: ${(err as Error).message}`,
+      `Could not validate symbol <b>${symbol}</b>. Please check the symbol and try again.`,
       { parse_mode: 'HTML' }
     );
     log.warn('Add asset failed', { userId, symbol, error: (err as Error).message });
