@@ -20,7 +20,7 @@ export class GeminiService {
    */
   static async summarizeNews(symbol: string, title: string, summary: string): Promise<string | null> {
     try {
-      const model = this.getClient().getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = this.getClient().getGenerativeModel({ model: 'gemini-2.0-flash' });
       
       const prompt = `
         You are a financial analyst assistant for a Telegram Trading Bot.
@@ -49,12 +49,33 @@ export class GeminiService {
   }
 
   /**
-   * Check if a user is allowed to use AI features.
+   * Check if a user is allowed and within rate limits.
    */
-  static isAllowed(userId: string): boolean {
-    // If no specific IDs are set, allow everyone (or you can restrict it)
-    if (config.gemini.allowedUserIds.length === 0) return true;
-    return config.gemini.allowedUserIds.includes(userId);
+  static async isAllowed(userId: string): Promise<{ allowed: boolean; reason?: string }> {
+    // 1. Whitelist Check
+    if (config.gemini.allowedUserIds.length > 0 && !config.gemini.allowedUserIds.includes(userId)) {
+      return { allowed: false, reason: 'You are not authorized to use AI features.' };
+    }
+
+    // 2. Rate Limit Check (Redis)
+    const limit = 5; // 5 requests per hour
+    const windowSeconds = 3600;
+    const key = `ai_ratelimit:${userId}`;
+
+    try {
+      const current = await redis.incr(key);
+      if (current === 1) {
+        await redis.expire(key, windowSeconds);
+      }
+
+      if (current > limit) {
+        return { allowed: false, reason: `AI Limit reached. Please try again in an hour. (${current}/${limit})` };
+      }
+    } catch (err) {
+      log.warn('Rate limiter error', { error: (err as Error).message });
+    }
+
+    return { allowed: true };
   }
 
   /**
@@ -62,7 +83,7 @@ export class GeminiService {
    */
   static async predict(signal: any): Promise<string> {
     try {
-      const model = this.getClient().getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = this.getClient().getGenerativeModel({ model: 'gemini-2.0-flash' });
       
       const prompt = `
         You are a world-class trading analyst. 

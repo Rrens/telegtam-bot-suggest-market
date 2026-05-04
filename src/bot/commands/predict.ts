@@ -72,7 +72,8 @@ export async function handlePredict(ctx: CommandContext<Context>): Promise<void>
     });
 
     // ── AI Prediction (restricted to allowed users) ────────────────────────
-    if (GeminiService.isAllowed(userId)) {
+    const aiCheck = await GeminiService.isAllowed(userId);
+    if (aiCheck.allowed) {
       try {
         const aiLoadingMsg = await ctx.reply(`🤖 <b>Generating AI prediction...</b>`, { parse_mode: 'HTML' });
         const aiText = await GeminiService.predict(signal);
@@ -90,6 +91,9 @@ export async function handlePredict(ctx: CommandContext<Context>): Promise<void>
         log.warn('AI prediction failed', { userId, symbol, error: (aiErr as Error).message });
         await ctx.reply(`🤖 <b>AI Prediction unavailable</b>: ${(aiErr as Error).message}`, { parse_mode: 'HTML' });
       }
+    } else if (aiCheck.reason && !aiCheck.reason.includes('not authorized')) {
+      // Only show reason if it's a rate limit issue (don't spam non-whitelisted users)
+      await ctx.reply(`🤖 <b>AI Insight:</b> ${aiCheck.reason}`, { parse_mode: 'HTML' });
     }
 
     // Delete loading message
