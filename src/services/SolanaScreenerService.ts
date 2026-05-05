@@ -182,10 +182,15 @@ export class SolanaScreenerService {
     const birdeyeUrl = `https://birdeye.so/token/${token.address}?chain=solana`;
     const jupiterUrl = `https://jup.ag/tokens/${token.address}`;
 
+    const escape = (str: string) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const name = escape(token.name);
+    const symbol = escape(token.symbol);
+    const rugStatus = escape(token.rugCheckStatus || 'Unknown ❓');
+
     return [
       `${urgencyEmoji} <b>SOLANA GEM ALERT</b> ${urgencyEmoji}`,
       ``,
-      `<b>${token.name} (${token.symbol})</b>`,
+      `<b>${name} (${symbol})</b>`,
       ``,
       `📈 Price: <b>${priceFmt}</b>`,
       `⏱ +${token.change1h.toFixed(1)}% (1h) | +${token.change6h.toFixed(1)}% (6h) | +${token.change24h.toFixed(1)}% (24h)`,
@@ -194,7 +199,7 @@ export class SolanaScreenerService {
       `📊 Volume 24h: <b>${formatUsd(token.volume24h)}</b>`,
       token.marketCap ? `💎 Market Cap: <b>${formatUsd(token.marketCap)}</b>` : '',
       `🕒 Token Age: <b>${token.pairAge}h</b>`,
-      `🛡️ RugCheck: <b>${token.rugCheckStatus || 'Unknown ❓'}</b>`,
+      `🛡️ RugCheck: <b>${rugStatus}</b>`,
       ``,
       `🔑 <b>Contract Address:</b>`,
       `<code>${token.address}</code>`,

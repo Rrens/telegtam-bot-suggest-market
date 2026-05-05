@@ -33,10 +33,10 @@ export async function handleSolana(ctx: CommandContext<Context>): Promise<void> 
           ``,
           `Current criteria:`,
           `• Liquidity: $50K – $5M`,
-          `• Volume 24h: > $100K`,
-          `• Price change 1h: > +5%`,
-          `• Price change 6h: > +15%`,
-          `• Token age: < 7 days`,
+          `• Volume 24h: &gt; $100K`,
+          `• Price change 1h: &gt; +5%`,
+          `• Price change 6h: &gt; +15%`,
+          `• Token age: &lt; 7 days`,
           ``,
           `<i>Market mungkin sedang sideways. Coba lagi beberapa menit kemudian.</i>`
         ].join('\n'),
@@ -63,9 +63,10 @@ export async function handleSolana(ctx: CommandContext<Context>): Promise<void> 
 
     if (toShow.length === 0) {
       // All tokens are on cooldown
-      const skippedList = skipped
-        .map(t => `• <b>${t.symbol}</b> (${t.name}) — cooldown aktif`)
-        .join('\n');
+      const skippedList = skipped.map(t => {
+        const escapedSymbol = t.symbol.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `• <b>${escapedSymbol}</b> — cooldown aktif`;
+      }).join('\n');
 
       await ctx.reply(
         [
