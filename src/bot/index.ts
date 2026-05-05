@@ -34,6 +34,7 @@ import { handleSmartMoney } from './commands/smartmoney';
 import { handleAlertRsi } from './commands/alertrsi';
 import { handleCheck } from './commands/check';
 import { handleWatch, handleWatchlist } from './commands/watchlist';
+import { handleMenu, handleMenuCallbacks } from './commands/menu';
 import { activityLogger } from './middleware/activityLogger';
 import { log } from '../utils/logger';
 
@@ -77,8 +78,17 @@ export function createBot(): Bot {
   bot.command('check', handleCheck);
   bot.command('watch', handleWatch);
   bot.command('watchlist', handleWatchlist);
+  bot.command('menu', handleMenu);
+  bot.command('start', handleMenu);
 
-  // ── Channel Support ─────────────────────────────────────────────────────────
+  // Callback query handling for menu
+  bot.on('callback_query:data', async (ctx) => {
+    if (ctx.callbackQuery.data.startsWith('cat_') || 
+        ctx.callbackQuery.data.startsWith('cmd_') || 
+        ctx.callbackQuery.data === 'back_to_menu') {
+      return handleMenuCallbacks(ctx);
+    }
+  });
   // Allows commands like /info or /kurs to work when posted in a channel
   bot.on('channel_post:text', async (ctx, next) => {
     log.info(`Received post from channel: ${ctx.chat.title} (ID: ${ctx.chat.id})`);
@@ -102,34 +112,11 @@ export function createBot(): Bot {
 
   // ── Bot commands menu ───────────────────────────────────────────────────────
   bot.api.setMyCommands([
-    { command: 'start', description: 'Start / show command list' },
-    { command: 'predict', description: 'Full signal analysis for a symbol' },
-    { command: 'news', description: 'Latest news with sentiment' },
-    { command: 'add', description: 'Add asset to portfolio' },
-    { command: 'list', description: 'List tracked assets' },
-    { command: 'listalerts', description: 'List active price alerts' },
-    { command: 'delete', description: 'Remove an asset' },
-    { command: 'portfolio', description: 'Portfolio PnL summary' },
-    { command: 'alert', description: 'Set price alert' },
-    { command: 'delalert', description: 'Delete a price alert by ID' },
-    { command: 'alertnews', description: 'Subscribe to news alerts' },
-    { command: 'history', description: 'Signal history for a symbol' },
-    { command: 'profile', description: 'Set risk profile & timeframe' },
-    { command: 'info', description: 'Show system & channel information' },
-    { command: 'kurs', description: 'Check USD/IDR exchange rate' },
-    { command: 'app', description: 'Open Telegram Mini App' },
-    { command: 'help', description: 'Show help menu' },
-    { command: 'paper', description: 'View paper trading portfolio' },
-    { command: 'paperbuy', description: 'Buy asset in paper trading' },
-    { command: 'papersell', description: 'Sell asset in paper trading' },
-    { command: 'solana', description: '🚀 Scan Solana for hidden gem meme coins' },
-    { command: 'sentiment', description: '😨 Crypto Fear & Greed Index' },
-    { command: 'today', description: '🌅 Market overview & top movers today' },
-    { command: 'smartmoney', description: '🐋 Smart money wallet tracker' },
-    { command: 'alertrsi', description: '📊 Set RSI / MA Cross technical alerts' },
-    { command: 'check', description: '🛡️ RugCheck a Solana contract address' },
-    { command: 'watch', description: '👁 Add/remove from watchlist' },
-    { command: 'watchlist', description: '👁 View your token watchlist' },
+    { command: 'start', description: '🏁 Start & Main Menu' },
+    { command: 'menu', description: '📱 All Features Dashboard' },
+    { command: 'app', description: '🚀 Launch Mini App' },
+    { command: 'check', description: '🛡️ Scan Solana CA' },
+    { command: 'help', description: '❓ Get support' },
   ]).catch((err) => log.warn('Failed to set bot commands', { error: err.message }));
 
   return bot;

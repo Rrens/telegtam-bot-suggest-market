@@ -57,7 +57,12 @@ export function startWebServer() {
         // Ignored if table doesn't exist yet
       }
 
+      const { Bot } = require('grammy');
+      const botTemp = new Bot(config.bot.token);
+      const me = await botTemp.api.getMe();
+
       res.json({
+        botName: me.first_name,
         users: users?.cnt || 0,
         assets: assets?.cnt || 0,
         signals: signals?.cnt || 0,
@@ -198,6 +203,71 @@ export function startWebServer() {
     } catch (err) {
       res.status(500).json({ error: 'Failed to load watchlist' });
     }
+  });
+
+  // API: TMA Market Pulse (Fear & Greed, Recent Signals, News)
+  app.get('/api/tma/market-pulse', async (req, res) => {
+    try {
+      const { FearGreedService } = require('../services/FearGreedService');
+      const { NewsService } = require('../services/NewsService');
+      
+      const [fearGreed, recentSignals, news] = await Promise.all([
+        FearGreedService.getIndex(),
+        db('signals').orderBy('created_at', 'desc').limit(5),
+        NewsService.getNews('BTC', 5) // Default to BTC news for market pulse
+      ]);
+
+      res.json({
+        fearGreed,
+        signals: recentSignals,
+        news: news.map(n => ({
+          title: n.title,
+          source: n.source,
+          url: n.url,
+          sentiment: n.sentiment,
+          time: n.publishedAt
+        }))
+      });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to load market pulse' });
+    }
+  });
+
+  // --- NEW: TMA WRITE ACTIONS ---
+
+  // Add Asset
+  app.post('/api/tma/assets/add', async (req, res) => {
+    const { user_id, symbol, amount, avg_price } = req.body;
+    if (!user_id || !symbol || !amount) return res.status(400).json({ error: 'Missing data' });
+    try {
+      await db('assets').insert({
+        user_id, symbol: symbol.toUpperCase(), amount, avg_price: avg_price || 0
+      }).onConflict(['user_id', 'symbol']).merge();
+      res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Failed to add asset' }); }
+  });
+
+  // Delete Asset/Watchlist
+  app.post('/api/tma/delete', async (req, res) => {
+    const { user_id, symbol, type } = req.body; // type: 'asset' | 'watchlist'
+    if (!user_id || !symbol) return res.status(400).json({ error: 'Missing data' });
+    try {
+      const table = type === 'asset' ? 'assets' : 'watchlist';
+      await db(table).where({ user_id, symbol: symbol.toUpperCase() }).delete();
+      res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Delete failed' }); }
+  });
+
+  // Add Technical Alert
+  app.post('/api/tma/alerts/add', async (req, res) => {
+    const { user_id, symbol, indicator, threshold, condition } = req.body;
+    if (!user_id || !symbol || !indicator) return res.status(400).json({ error: 'Missing data' });
+    try {
+      await db('technical_alerts').insert({
+        user_id, symbol: symbol.toUpperCase(), indicator, threshold, condition, is_active: true
+      });
+      res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Failed to add alert' }); }
   });
 
   app.listen(port, () => {

@@ -1,34 +1,46 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// /help command: Detailed guide to all bot features.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { CommandContext, Context } from 'grammy';
 
-export async function handleHelp(ctx: CommandContext<Context>): Promise<void> {
+export async function handleHelp(ctx: CommandContext<Context> | Context): Promise<void> {
+  const me = await ctx.api.getMe();
   const helpMessage = [
-    `<b>🤖 Advanced Trading Assistant - Help Menu</b>`,
+    `<b>🤖 ${me.first_name} Intelligence - Panduan Lengkap</b>`,
     ``,
-    `<b>📈 Market Analysis</b>`,
-    `• /predict &lt;symbol&gt; - Get a deep analysis, signal, and chart (e.g., <code>/predict BTCUSDT</code>).`,
-    `• /news &lt;symbol&gt; - Get latest news and sentiment score for an asset.`,
-    `• /history &lt;symbol&gt; - View recent signal history for an asset.`,
-    `• /backtest &lt;symbol&gt; - Check the accuracy of historical signals.`,
+    `<b>🚀 MARKET INTELLIGENCE</b>`,
+    `• <code>/today</code> - Rangkuman pasar, koin teraktif, dan top gainer hari ini.`,
+    `• <code>/sentiment</code> - Cek Fear & Greed Index terbaru.`,
+    `• <code>/solana</code> - Scan koin micin Solana yang berpotensi "gem" secara otomatis.`,
+    `• <code>/smartmoney</code> - Pantau dompet "Smart Money" yang cuan gede di Solana.`,
+    `• <code>/predict &lt;symbol&gt;</code> - Analisis teknikal mendalam + prediksi AI (contoh: <code>/predict BTC</code>).`,
     ``,
-    `<b>📁 Portfolio Management</b>`,
-    `• /add &lt;symbol&gt; &lt;amount&gt; &lt;avg_price&gt; - Add an asset to track your PnL.`,
-    `• /list - List all your tracked assets.`,
-    `• /delete &lt;symbol&gt; - Stop tracking an asset.`,
-    `• /portfolio - See your total portfolio value and profit/loss.`,
+    `<b>🛡️ SECURITY & ON-CHAIN</b>`,
+    `• <code>/check &lt;CA&gt;</code> - Scan keamanan koin Solana (LP Lock, Burn, Auth) via RugCheck.`,
+    `• <code>/watch &lt;symbol&gt; [target]</code> - Tambahkan koin ke watchlist (bisa pake target harga).`,
+    `• <code>/watchlist</code> - Lihat daftar koin incaran lo dan harga real-time.`,
     ``,
-    `<b>🔔 Alerts</b>`,
-    `• /alert &lt;symbol&gt; &lt;direction&gt; &lt;price&gt; - Set price alerts.`,
-    `  <i>Direction: gte (&gt;=) or lte (&lt;=)</i>`,
-    `• /alertnews &lt;symbol&gt; - Subscribe to high-impact news alerts for an asset.`,
+    `<b>📊 TECHNICAL ALERTS</b>`,
+    `• <code>/alertrsi</code> - Setel alert otomatis (RSI Oversold/Bought atau MA Cross).`,
+    `• <code>/alert &lt;symbol&gt; &lt;direction&gt; &lt;price&gt;</code> - Alert harga tradisional.`,
     ``,
-    `<b>⚙️ Settings & Info</b>`,
-    `• /profile - Set your risk profile and preferred timeframe.`,
-    `• /info - View bot status and system performance.`,
-    `• /kurs - Check real-time USD/IDR exchange rate.`,
-    `• /help - Show this message.`,
+    `<b>📱 MINI APP & OTHERS</b>`,
+    `• <code>/app</code> - Buka Dashboard Interaktif (Mini App) buat pengalaman lebih pro.`,
+    `• <code>/kurs</code> - Cek nilai tukar real-time USD ke IDR.`,
+    `• <code>/paper</code> - Mulai simulasi trading (Paper Trading) tanpa modal beneran.`,
     ``,
-    `<i>💡 Tip: Use symbols like BTCUSDT for Crypto, AAPL for Stocks, or EURUSD for Forex.</i>`,
+    `─── <b>TIPS</b> ───`,
+    `💡 Gunakan tombol <b>/menu</b> buat navigasi cepat tanpa perlu menghafal semua command.`,
+    `💡 Pasang bot di <b>Channel</b> lo buat dapet alert Whale & Pump.fun otomatis.`,
+    ``,
+    `<i>Butuh bantuan lebih lanjut? Hubungi Admin.</i>`,
   ].join('\n');
 
-  await ctx.reply(helpMessage, { parse_mode: 'HTML' });
+  if (ctx.callbackQuery) {
+    // If triggered from menu callback
+    await ctx.reply(helpMessage, { parse_mode: 'HTML' });
+  } else {
+    await ctx.reply(helpMessage, { parse_mode: 'HTML' });
+  }
 }
