@@ -12,6 +12,7 @@ import { handleWatchlist } from './watchlist';
 import { handleAlertRsi } from './alertrsi';
 import { handleApp } from './app';
 import { handleCheck } from './check';
+import { config } from '../../config';
 
 export async function handleMenu(ctx: Context): Promise<void> {
   const isStart = !ctx.callbackQuery && ctx.message?.text?.startsWith('/start');
