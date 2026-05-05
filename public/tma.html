@@ -344,30 +344,44 @@
             posContainer.innerHTML = '<div class="loading-text">Loading portfolio...</div>';
             try {
                 const res = await fetch(`/api/tma/paper/portfolio?user_id=${userId}`);
+                if (!res.ok) throw new Error('Server returned error');
                 const data = await res.json();
-                document.getElementById('trade-balance').innerText = `$${data.balance.toLocaleString()}`;
+                
+                if (!data || data.positions === undefined) {
+                    posContainer.innerHTML = '<div class="sub">Unable to parse portfolio data.</div>';
+                    return;
+                }
+
+                document.getElementById('trade-balance').innerText = `$${(data.balance || 0).toLocaleString()}`;
                 
                 let html = '';
-                if (data.positions.length === 0) html = '<div class="sub">No active paper positions.</div>';
-                data.positions.forEach(p => {
-                    html += `<div class="list-item">
-                        <div>
-                            <div class="symbol">${p.symbol}</div>
-                            <div class="sub">Avg: $${p.avg_price.toLocaleString()} | ${p.amount.toFixed(4)} Units</div>
-                            <div style="font-size: 0.6rem; color: var(--accent); margin-top: 4px;">
-                                ${p.tp_price ? `🎯 TP: $${p.tp_price} ` : ''}
-                                ${p.sl_price ? `🛡️ SL: $${p.sl_price} ` : ''}
-                                ${p.trailing_stop_pct ? `📉 TS: ${p.trailing_stop_pct}%` : ''}
+                if (data.positions.length === 0) {
+                    html = '<div class="sub">No active paper positions.</div>';
+                } else {
+                    data.positions.forEach(p => {
+                        html += `<div class="list-item">
+                            <div>
+                                <div class="symbol">${p.symbol}</div>
+                                <div class="sub">Avg: $${p.avg_price.toLocaleString()} | ${p.amount.toFixed(4)} Units</div>
+                                <div style="font-size: 0.6rem; color: var(--accent); margin-top: 4px;">
+                                    ${p.tp_price ? `🎯 TP: $${p.tp_price} ` : ''}
+                                    ${p.sl_price ? `🛡️ SL: $${p.sl_price} ` : ''}
+                                    ${p.trailing_stop_pct ? `📉 TS: ${p.trailing_stop_pct}%` : ''}
+                                    ${p.error ? `<span style="color:var(--danger)"> | ⚠️ ${p.error}</span>` : ''}
+                                </div>
                             </div>
-                        </div>
-                        <div style="text-align:right">
-                            <div class="symbol">$${p.value.toLocaleString()}</div>
-                            <div class="${p.pnl>=0?'pos':'neg'}">${p.pnl>=0?'+':''}${p.pnlPct.toFixed(2)}%</div>
-                        </div>
-                    </div>`;
-                });
+                            <div style="text-align:right">
+                                <div class="symbol">$${p.value.toLocaleString()}</div>
+                                <div class="${p.pnl>=0?'pos':'neg'}">${p.pnl>=0?'+':''}${p.pnlPct.toFixed(2)}%</div>
+                            </div>
+                        </div>`;
+                    });
+                }
                 posContainer.innerHTML = html;
-            } catch (e) { posContainer.innerHTML = 'Failed to load.'; }
+            } catch (e) { 
+                console.error('Portfolio load failed:', e);
+                posContainer.innerHTML = 'Failed to load portfolio. Check server logs.'; 
+            }
         }
 
         async function executeTrade() {

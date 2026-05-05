@@ -347,21 +347,36 @@ export function startWebServer() {
       
       const formattedPositions = await Promise.all(positions.map(async (pos) => {
         const { PriceService } = require('../services/PriceService');
-        const { price: currentPrice } = await PriceService.getPrice(pos.symbol);
-        const cost = pos.amount * pos.avg_price;
-        const value = pos.amount * currentPrice;
-        return {
-          ...pos,
-          currentPrice,
-          value,
-          pnl: value - cost,
-          pnlPct: ((value - cost) / cost) * 100
-        };
+        try {
+          const { price: currentPrice } = await PriceService.getPrice(pos.symbol);
+          const cost = parseFloat(pos.amount) * parseFloat(pos.avg_price);
+          const value = parseFloat(pos.amount) * currentPrice;
+          return {
+            ...pos,
+            currentPrice,
+            value,
+            pnl: value - cost,
+            pnlPct: cost > 0 ? ((value - cost) / cost) * 100 : 0
+          };
+        } catch (e) {
+          return {
+            ...pos,
+            currentPrice: 0,
+            value: 0,
+            pnl: 0,
+            pnlPct: 0,
+            error: 'Price unavailable'
+          };
+        }
       }));
 
       res.json({
-        balance: user?.paper_balance || 0,
-        positions: formattedPositions
+        balance: parseFloat(user?.paper_balance || '0'),
+        positions: formattedPositions.map(p => ({
+          ...p,
+          amount: parseFloat(p.amount),
+          avg_price: parseFloat(p.avg_price)
+        }))
       });
     } catch (err) { res.status(500).json({ error: 'Failed to load paper portfolio' }); }
   });

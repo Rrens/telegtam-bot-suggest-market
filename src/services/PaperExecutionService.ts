@@ -84,12 +84,18 @@ export class PaperExecutionService {
     });
 
     if (bot) {
-      const icon = pnl >= 0 ? '💰' : '📉';
-      const msg = `${icon} <b>PAPER TRADE CLOSED: ${reason}</b>\n\n` +
-                  `Symbol: <b>${pos.symbol}</b>\n` +
-                  `Exit Price: $${exitPrice.toFixed(6)}\n` +
-                  `PnL: <b>${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</b>`;
-      await sendNotification(bot, pos.user_id, msg);
+      try {
+        const icon = pnl >= 0 ? '💰' : '📉';
+        const msg = `${icon} <b>PAPER TRADE CLOSED: ${reason}</b>\n\n` +
+                    `Symbol: <b>${pos.symbol}</b>\n` +
+                    `Exit Price: $${exitPrice.toFixed(6)}\n` +
+                    `PnL: <b>${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</b>`;
+        
+        // Send directly to user ID (DM) instead of using the channel-first notifier
+        await bot.api.sendMessage(pos.user_id, msg, { parse_mode: 'HTML' });
+      } catch (err) {
+        log.warn('Failed to send private paper trade notification', { userId: pos.user_id, error: (err as Error).message });
+      }
     }
   }
 }
