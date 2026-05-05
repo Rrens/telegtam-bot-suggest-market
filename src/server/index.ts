@@ -263,16 +263,52 @@ export function startWebServer() {
     } catch (err) { res.status(500).json({ error: 'Delete failed' }); }
   });
 
-  // Add Technical Alert
-  app.post('/api/tma/alerts/add', async (req, res) => {
-    const { user_id, symbol, indicator, threshold, condition } = req.body;
-    if (!user_id || !symbol || !indicator) return res.status(400).json({ error: 'Missing data' });
+  // API: TMA Market Today (Top Movers)
+  app.get('/api/tma/today', async (req, res) => {
     try {
-      await db('technical_alerts').insert({
-        user_id, symbol: symbol.toUpperCase(), indicator, threshold, condition, is_active: true
-      });
+      const { PriceService } = require('../services/PriceService');
+      const movers = await PriceService.getTopMovers();
+      res.json(movers);
+    } catch (err) { res.status(500).json({ error: 'Failed to load today data' }); }
+  });
+
+  // API: TMA Solana Gems & Smart Money
+  app.get('/api/tma/gems', async (req, res) => {
+    try {
+      const { SolanaScreenerService } = require('../services/SolanaScreenerService');
+      const gems = await SolanaScreenerService.getGraduatedTokens();
+      const whale = await SolanaScreenerService.getWhaleMovements();
+      res.json({ gems, whale });
+    } catch (err) { res.status(500).json({ error: 'Failed to load gems data' }); }
+  });
+
+  // API: TMA RugCheck Simulation
+  app.get('/api/tma/rugcheck', async (req, res) => {
+    const { ca } = req.query;
+    if (!ca) return res.status(400).json({ error: 'Missing CA' });
+    try {
+      const { RugCheckService } = require('../services/RugCheckService');
+      const report = await RugCheckService.getReport(ca as string);
+      res.json(report);
+    } catch (err) { res.status(500).json({ error: 'Check failed' }); }
+  });
+
+  // API: TMA Manage Alerts
+  app.get('/api/tma/alerts', async (req, res) => {
+    const { user_id } = req.query;
+    if (!user_id) return res.status(400).json({ error: 'Missing user_id' });
+    try {
+      const alerts = await db('technical_alerts').where({ user_id });
+      res.json(alerts);
+    } catch (err) { res.status(500).json({ error: 'Failed to load alerts' }); }
+  });
+
+  app.post('/api/tma/alerts/delete', async (req, res) => {
+    const { id, user_id } = req.body;
+    try {
+      await db('technical_alerts').where({ id, user_id }).delete();
       res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: 'Failed to add alert' }); }
+    } catch (err) { res.status(500).json({ error: 'Delete failed' }); }
   });
 
   app.listen(port, () => {
