@@ -4,6 +4,7 @@
 
 import { CommandContext, Context, InlineKeyboard } from 'grammy';
 import { handleHelp } from './help';
+import { config } from '../../config';
 
 export async function handleMenu(ctx: CommandContext<Context> | Context): Promise<void> {
   const isStart = !ctx.callbackQuery && (ctx as any).message?.text?.startsWith('/start');
@@ -29,8 +30,11 @@ export async function handleMenu(ctx: CommandContext<Context> | Context): Promis
     .text('🛡️ Security & Watch', 'cat_security').row()
     .text('📊 Alerts & Tools', 'cat_alerts')
     .text('📱 Open Mini App', 'cat_app').row()
-    .text('❓ Help Center', 'cmd_help').row()
-    .url('🌐 Web Dashboard', 'http://localhost:3000/dashboard?token=ADMIN_TOKEN_HERE'); 
+    .text('❓ Help Center', 'cmd_help');
+
+  // Hanya tampilkan tombol dashboard jika bukan localhost (Telegram policy)
+  const dashboardUrl = `https://your-domain.com/dashboard?token=${config.app.dashboardSecret}`;
+  // keyboard.url('🌐 Web Dashboard', dashboardUrl); 
 
   if (ctx.callbackQuery) {
     await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: keyboard });
