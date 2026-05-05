@@ -13,8 +13,13 @@ export function startWebServer() {
   app.use(cors({ origin: allowedOrigin }));
   app.use(express.json());
 
-  // Security Middleware for API
+  // Security Middleware for API (Dashboard only)
   app.use('/api', (req, res, next) => {
+    // Skip security check for TMA (Mini App) endpoints
+    if (req.path.startsWith('/tma')) {
+      return next();
+    }
+    
     const token = req.query.token;
     if (!token || token !== config.app.dashboardSecret) {
       return res.status(401).json({ error: 'Unauthorized' });
