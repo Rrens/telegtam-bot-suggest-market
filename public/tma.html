@@ -154,16 +154,17 @@
                 } else {
                     data.assets.forEach(a => {
                         const isPos = a.pnl >= 0;
+                        const cur = a.currency || '$';
                         html += `
                             <div class="list-item">
                                 <div>
                                     <div class="asset-name">${a.symbol}</div>
-                                    <div class="stat-label">${a.amount} @ $${a.avgPrice.toFixed(2)}</div>
+                                    <div class="stat-label">${a.amount} @ ${cur}${a.avgPrice.toFixed(a.avgPrice < 1 ? 6 : 2)}</div>
                                 </div>
                                 <div style="text-align: right;">
-                                    <div class="asset-name">$${a.currentValue.toFixed(2)}</div>
+                                    <div class="asset-name">${cur}${a.currentValue.toLocaleString('en-US', {maximumFractionDigits: 2})}</div>
                                     <div class="asset-pnl ${isPos ? 'positive' : 'negative'}">
-                                        ${isPos ? '+' : ''}$${a.pnl.toFixed(2)}
+                                        ${isPos ? '+' : ''}${cur}${a.pnl.toLocaleString('en-US', {maximumFractionDigits: 2})}
                                     </div>
                                 </div>
                             </div>
@@ -182,14 +183,15 @@
                 } else {
                     watchData.forEach(w => {
                         const isPos = w.change24h >= 0;
-                        const targetHtml = w.target ? `<span style="font-size: 0.8rem; color: var(--hint-color);">🎯 $${w.target}</span>` : '';
+                        const cur = w.currency || '$';
+                        const targetHtml = w.target ? `<span style="font-size: 0.8rem; color: var(--hint-color);">🎯 ${cur}${w.target}</span>` : '';
                         watchHtml += `
                             <div class="list-item">
                                 <div>
                                     <div class="asset-name">${w.symbol} ${targetHtml}</div>
                                 </div>
                                 <div style="text-align: right;">
-                                    <div class="asset-name">$${w.price.toFixed(w.price < 1 ? 6 : 2)}</div>
+                                    <div class="asset-name">${cur}${w.price.toFixed(w.price < 1 ? 6 : 2)}</div>
                                     <div class="asset-pnl ${isPos ? 'positive' : 'negative'}">
                                         ${isPos ? '+' : ''}${w.change24h.toFixed(2)}%
                                     </div>

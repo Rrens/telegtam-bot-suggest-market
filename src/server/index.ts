@@ -110,30 +110,41 @@ export function startWebServer() {
       let totalCost = 0;
 
       const formattedAssets = await Promise.all(assets.map(async (a) => {
-        // We need the current price, but for speed we might want to use a cache or PriceService
-        // To avoid async issues in map without proper PriceService import, we'll try to require it
         const { PriceService } = require('../services/PriceService');
+        const rate = PriceService.getLastUsdIdrRate() || 16000;
         try {
           const { price } = await PriceService.getPrice(a.symbol);
-          const currentValue = a.amount * price;
-          const cost = a.amount * a.avg_price;
-          totalValue += currentValue;
-          totalCost += cost;
+          const isIdr = a.symbol.endsWith('.JK') || a.symbol.endsWith('.ID');
+          
+          const usdPrice = isIdr ? price / rate : price;
+          const usdAvgPrice = isIdr ? a.avg_price / rate : a.avg_price;
+          
+          const usdCurrentValue = a.amount * usdPrice;
+          const usdCost = a.amount * usdAvgPrice;
+          
+          totalValue += usdCurrentValue;
+          totalCost += usdCost;
+          
+          const nativeCurrentValue = a.amount * price;
+          const nativeCost = a.amount * a.avg_price;
           
           return {
             symbol: a.symbol,
             amount: a.amount,
             avgPrice: parseFloat(a.avg_price),
-            currentValue,
-            pnl: currentValue - cost
+            currentValue: nativeCurrentValue,
+            pnl: nativeCurrentValue - nativeCost,
+            currency: isIdr ? 'Rp' : '$'
           };
         } catch (e) {
+          const isIdr = a.symbol.endsWith('.JK') || a.symbol.endsWith('.ID');
           return {
             symbol: a.symbol,
             amount: a.amount,
             avgPrice: parseFloat(a.avg_price),
             currentValue: 0,
-            pnl: 0
+            pnl: 0,
+            currency: isIdr ? 'Rp' : '$'
           };
         }
       }));
@@ -161,20 +172,24 @@ export function startWebServer() {
         const { PriceService } = require('../services/PriceService');
         try {
           const { price, change24h } = await PriceService.getPrice(w.symbol);
+          const isIdr = w.symbol.endsWith('.JK') || w.symbol.endsWith('.ID');
           return {
             symbol: w.symbol,
             type: w.asset_type,
             price,
             change24h,
-            target: w.entry_price ? parseFloat(w.entry_price) : null
+            target: w.entry_price ? parseFloat(w.entry_price) : null,
+            currency: isIdr ? 'Rp' : '$'
           };
         } catch {
+          const isIdr = w.symbol.endsWith('.JK') || w.symbol.endsWith('.ID');
           return {
             symbol: w.symbol,
             type: w.asset_type,
             price: 0,
             change24h: 0,
-            target: w.entry_price ? parseFloat(w.entry_price) : null
+            target: w.entry_price ? parseFloat(w.entry_price) : null,
+            currency: isIdr ? 'Rp' : '$'
           };
         }
       }));
