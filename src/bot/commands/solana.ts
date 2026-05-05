@@ -93,12 +93,27 @@ export async function handleSolana(ctx: CommandContext<Context>): Promise<void> 
 
     await ctx.reply(headerLines.join('\n'), { parse_mode: 'HTML' });
 
-    // Send each gem as a separate message
+    // Send each gem as a separate message with action buttons
     for (const token of toShow) {
       const message = SolanaScreenerService.formatAlert(token);
+
+      const birdeyeUrl = `https://birdeye.so/token/${token.address}?chain=solana`;
+      const jupiterUrl = `https://jup.ag/tokens/${token.address}`;
+      const dexUrl     = token.dexUrl;
+
+      // Inline keyboard: quick action buttons right under each alert
+      const keyboard = {
+        inline_keyboard: [[
+          { text: '📊 DexScreener', url: dexUrl },
+          { text: '🐦 Birdeye',     url: birdeyeUrl },
+          { text: '⚡ Buy Jupiter', url: jupiterUrl },
+        ]],
+      };
+
       await ctx.reply(message, {
         parse_mode: 'HTML',
         link_preview_options: { is_disabled: true },
+        reply_markup: keyboard,
       });
 
       // Send CA as a separate copyable block

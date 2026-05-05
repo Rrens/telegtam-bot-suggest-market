@@ -28,6 +28,10 @@ import { handleApp } from './commands/app';
 import { handleAdmin, handleBroadcast } from './commands/admin';
 import { handlePaperStatus, handlePaperBuy, handlePaperSell } from './commands/paper';
 import { handleSolana } from './commands/solana';
+import { handleSentiment } from './commands/sentiment';
+import { handleToday } from './commands/today';
+import { handleSmartMoney } from './commands/smartmoney';
+import { handleAlertRsi } from './commands/alertrsi';
 import { activityLogger } from './middleware/activityLogger';
 import { log } from '../utils/logger';
 
@@ -64,6 +68,10 @@ export function createBot(): Bot {
   bot.command('paperbuy', handlePaperBuy);
   bot.command('papersell', handlePaperSell);
   bot.command('solana', handleSolana);
+  bot.command('sentiment', handleSentiment);
+  bot.command('today', handleToday);
+  bot.command('smartmoney', handleSmartMoney);
+  bot.command('alertrsi', handleAlertRsi);
 
   // ── Channel Support ─────────────────────────────────────────────────────────
   // Allows commands like /info or /kurs to work when posted in a channel
@@ -110,6 +118,10 @@ export function createBot(): Bot {
     { command: 'paperbuy', description: 'Buy asset in paper trading' },
     { command: 'papersell', description: 'Sell asset in paper trading' },
     { command: 'solana', description: '🚀 Scan Solana for hidden gem meme coins' },
+    { command: 'sentiment', description: '😨 Crypto Fear & Greed Index' },
+    { command: 'today', description: '🌅 Market overview & top movers today' },
+    { command: 'smartmoney', description: '🐋 Smart money wallet tracker' },
+    { command: 'alertrsi', description: '📊 Set RSI / MA Cross technical alerts' },
   ]).catch((err) => log.warn('Failed to set bot commands', { error: err.message }));
 
   return bot;

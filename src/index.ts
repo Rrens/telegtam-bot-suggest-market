@@ -11,6 +11,7 @@ import { startAlertWorker } from './workers/alertWorker';
 import { startSignalWorker } from './workers/signalWorker';
 import { startSolanaScreenerWorker } from './workers/solanaScreenerWorker';
 import { startWhaleWorker } from './workers/whaleWorker';
+import { startSmartMoneyWorker } from './workers/smartMoneyWorker';
 import { log } from './utils/logger';
 import { redis } from './cache/redis';
 
@@ -45,7 +46,8 @@ async function bootstrap(): Promise<void> {
   startSignalWorker();
   startMarketWorker(bot);
   startSolanaScreenerWorker(bot); // 🚀 Solana meme coin gem screener
-  startWhaleWorker(bot); // 🐋 Whale movements tracker
+  startWhaleWorker(bot);           // 🐋 Whale movements tracker
+  startSmartMoneyWorker(bot);      // 🧠 Smart money wallet tracker
 
   // 4.5 Start Web Dashboard Server
   startWebServer();
