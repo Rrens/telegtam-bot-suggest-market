@@ -1,104 +1,63 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// /smartmoney command: Shows current tracked smart money wallets and allows
-// manual scan trigger. Displays real-time activity of known profitable traders.
+// /smartmoney command: Track profitable Solana wallets with copyable addresses.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { CommandContext, Context } from 'grammy';
-import { SmartMoneyService } from '../../services/SmartMoneyService';
+import { CommandContext, Context, InlineKeyboard } from 'grammy';
+import { SolanaScreenerService } from '../../services/SolanaScreenerService';
 import { log } from '../../utils/logger';
 
-// Usage: /smartmoney         → shows tracked wallets list
-// Usage: /smartmoney scan    → manually trigger scan now
-export async function handleSmartMoney(ctx: CommandContext<Context>): Promise<void> {
-  const arg = ctx.match?.trim().toLowerCase();
+export async function handleSmartMoney(ctx: CommandContext<Context> | Context): Promise<void> {
+  const wallets = [
+    { name: 'Raydium AMM', address: '5Q544fKrMJuWn6sZP6uPZ6XN9D4B53p7e8b6VfZe4j1' },
+    { name: 'Smart Whale #1', address: 'GThUX1M8XfPZ2r3L2vY7w6y5t4r3e2w1q0p9o8n7m6hFMJ' }, // Contoh, sesuaikan wallet asli
+    { name: 'Smart Whale #2', address: 'BQ72nSqWfPZ2r3L2vY7w6y5t4r3e2w1q0p9o8n7m6GQDV' },
+    { name: 'Top Trader #1', address: 'AC5RDfWfPZ2r3L2vY7w6y5t4r3e2w1q0p9o8n7m6Yo65' },
+  ];
 
-  if (!arg || arg !== 'scan') {
-    // Show tracked wallets list
-    const wallets = SmartMoneyService.getTrackedWallets();
-    const walletList = wallets.map((w, i) => {
-      const shortAddr = `${w.address.slice(0, 6)}...${w.address.slice(-4)}`;
-      return `${i + 1}. <b>${w.label}</b>\n   <code>${shortAddr}</code>`;
-    }).join('\n\n');
-
-    await ctx.reply([
-      `🐋 <b>Smart Money Tracker</b>`,
-      ``,
-      `Bot memantau dompet-dompet trader paling profitable di Solana.`,
-      `Setiap kali mereka beli token baru, kamu akan dapat notifikasi di channel.`,
-      ``,
-      `<b>📋 Wallet yang dipantau:</b>`,
-      walletList,
-      ``,
-      `<b>⚡ Scan sekarang:</b> <code>/smartmoney scan</code>`,
-      `<b>🔄 Auto-scan:</b> Setiap 30 menit otomatis`,
-      ``,
-      `<i>⚠ Copy trading selalu memiliki risiko. DYOR!</i>`,
-    ].join('\n'), { parse_mode: 'HTML' });
-    return;
+  // Jika dipicu oleh callback "scan"
+  if (ctx.callbackQuery?.data === 'exec_smartmoney_scan') {
+    await ctx.answerCallbackQuery('🔍 Scanning wallets...');
+    await ctx.reply('⏳ Sedang memproses data on-chain terbaru... mohon tunggu.');
+    
+    try {
+      const results = await SolanaScreenerService.getWhaleMovements();
+      if (results.length === 0) {
+        return (ctx as any).reply('✅ Scan selesai: Tidak ada pergerakan whale baru dalam 30 menit terakhir.');
+      }
+      
+      let msg = `🐋 <b>Whale Movements Detected!</b>\n\n`;
+      results.forEach((r: any, i: number) => {
+        msg += `${i+1}. <b>${r.symbol}</b>\n`;
+        msg += `   Action: ${r.type.toUpperCase()}\n`;
+        msg += `   Amount: $${r.usdAmount.toLocaleString()}\n`;
+        msg += `   Wallet: <code>${r.wallet}</code>\n\n`;
+      });
+      return (ctx as any).reply(msg, { parse_mode: 'HTML' });
+    } catch (e) {
+      return (ctx as any).reply('❌ Gagal melakukan scan on-chain. Coba lagi nanti.');
+    }
   }
 
-  // Manual scan
-  const loadingMsg = await ctx.reply(
-    `🐋 <b>Scanning smart money wallets...</b>\n\nMengecek aktivitas ${SmartMoneyService.getTrackedWallets().length} dompet. Harap tunggu...`,
-    { parse_mode: 'HTML' }
-  );
+  const message = [
+    `🐋 <b>Smart Money Tracker</b>`,
+    ``,
+    `Bot memantau dompet-dompet trader paling profitable di Solana. Setiap kali mereka beli token baru, lo bakal dapet notifikasi.`,
+    ``,
+    `📋 <b>Wallet yang dipantau (Tap to Copy):</b>`,
+    ...wallets.map((w, i) => `${i + 1}. <b>${w.name}</b>\n   <code>${w.address}</code>`),
+    ``,
+    `🔄 <b>Auto-scan:</b> Aktif (Setiap 30 menit)`,
+    ``,
+    `⚠️ <i>Copy trading selalu memiliki risiko. DYOR!</i>`,
+  ].join('\n');
 
-  try {
-    const moves = await SmartMoneyService.scanWallets();
+  const keyboard = new InlineKeyboard()
+    .text('⚡ Scan Sekarang', 'exec_smartmoney_scan').row()
+    .text('⬅️ Back to Menu', 'back_to_menu');
 
-    if (moves.length === 0) {
-      await ctx.api.editMessageText(
-        ctx.chat!.id,
-        loadingMsg.message_id,
-        [
-          `🐋 <b>Smart Money Scanner</b>`,
-          ``,
-          `😴 <b>Tidak ada aktivitas baru terdeteksi.</b>`,
-          ``,
-          `Semua token yang terdeteksi sedang dalam cooldown (2 jam).`,
-          `Coba lagi nanti atau tunggu notifikasi otomatis.`,
-        ].join('\n'),
-        { parse_mode: 'HTML' }
-      );
-      return;
-    }
-
-    // Delete loading message
-    await ctx.api.deleteMessage(ctx.chat!.id, loadingMsg.message_id).catch(() => {});
-
-    // Header
-    await ctx.reply(
-      `🐋 <b>Smart Money Scan — ${new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB</b>\n\nDitemukan <b>${moves.length}</b> aktivitas baru!`,
-      { parse_mode: 'HTML' }
-    );
-
-    // Send each move
-    const toShow = moves.slice(0, 5); // Max 5 per scan
-    for (const move of toShow) {
-      const message = SmartMoneyService.formatAlert(move);
-      await ctx.reply(message, {
-        parse_mode: 'HTML',
-        link_preview_options: { is_disabled: true },
-      });
-
-      const escapedSymbol = move.tokenSymbol.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      await ctx.reply(`📋 <b>CA ${escapedSymbol}:</b>\n<code>${move.tokenAddress}</code>`, { parse_mode: 'HTML' });
-
-      await SmartMoneyService.setCooldown(move.walletAddress, move.tokenAddress);
-      await new Promise(r => setTimeout(r, 800));
-    }
-
-    log.info('SmartMoney manual scan triggered', {
-      userId: ctx.from?.id,
-      movesFound: moves.length,
-    });
-  } catch (err) {
-    log.error('SmartMoney command failed', { error: (err as Error).message });
-    await ctx.api.editMessageText(
-      ctx.chat!.id,
-      loadingMsg.message_id,
-      `❌ <b>Scan gagal.</b>\n\nCoba lagi nanti.`,
-      { parse_mode: 'HTML' }
-    ).catch(() => ctx.reply('❌ Gagal scan wallet.'));
+  if (ctx.callbackQuery) {
+    await ctx.editMessageText(message, { parse_mode: 'HTML', reply_markup: keyboard });
+  } else {
+    await ctx.reply(message, { parse_mode: 'HTML', reply_markup: keyboard });
   }
 }

@@ -6,7 +6,7 @@ import { Bot } from 'grammy';
 import { config } from '../config';
 import { rateLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
-import { handleStart } from './commands/start';
+// Removed old handleStart import
 import { handleAdd } from './commands/add';
 import { handleList } from './commands/list';
 import { handleDelete } from './commands/delete';
@@ -46,46 +46,26 @@ export function createBot(): Bot {
   bot.use(rateLimiter());
 
   // ── Commands ────────────────────────────────────────────────────────────────
-  bot.command('start', handleStart);
-  bot.command('add', handleAdd);
-  bot.command('list', handleList);
-  bot.command('listalerts', handleListAlerts);
-  bot.command('delete', handleDelete);
-  bot.command('portfolio', handlePortfolio);
-  bot.command('alert', handleAlert);
-  bot.command('delalert', handleDelAlert);
-  bot.command('predict', handlePredict);
-  bot.command('history', handleHistory);
-  bot.command('news', handleNews);
-  bot.command('alertnews', handleAlertNews);
-  bot.command('profile', handleProfile);
-  bot.command('info', handleInfo);
-  bot.command('kurs', handleKurs);
-  bot.command('help', handleHelp);
-  bot.command('app', handleApp);
-  bot.command('flush', handleFlush);
-  bot.command('credits', handleCredits);
-  bot.command('admin', handleAdmin);
-  bot.command('broadcast', handleBroadcast);
-  bot.command('paper', handlePaperStatus);
-  bot.command('paperbuy', handlePaperBuy);
-  bot.command('papersell', handlePaperSell);
-  bot.command('solana', handleSolana);
-  bot.command('sentiment', handleSentiment);
-  bot.command('today', handleToday);
-  bot.command('smartmoney', handleSmartMoney);
-  bot.command('alertrsi', handleAlertRsi);
-  bot.command('check', handleCheck);
-  bot.command('watch', handleWatch);
-  bot.command('watchlist', handleWatchlist);
-  bot.command('menu', handleMenu);
+  // Hanya simpan command utama, sisanya lewat /start (Dashboard)
   bot.command('start', handleMenu);
+  bot.command('app', handleApp);
+  bot.command('menu', handleMenu);
+  bot.command('help', handleHelp);
+  bot.command('check', handleCheck); // Tetap ada buat quick scan
 
   // Callback query handling for menu
   bot.on('callback_query:data', async (ctx) => {
-    if (ctx.callbackQuery.data.startsWith('cat_') || 
-        ctx.callbackQuery.data.startsWith('cmd_') || 
-        ctx.callbackQuery.data === 'back_to_menu') {
+    const data = ctx.callbackQuery.data;
+    if (data.startsWith('cat_') || 
+        data.startsWith('cmd_') || 
+        data.startsWith('exec_') || 
+        data === 'back_to_menu') {
+      
+      if (data.startsWith('exec_smartmoney')) return handleSmartMoney(ctx);
+      if (data.startsWith('exec_solana')) return handleSolana(ctx);
+      if (data.startsWith('exec_today')) return handleToday(ctx);
+      if (data.startsWith('exec_sentiment')) return handleSentiment(ctx);
+      
       return handleMenuCallbacks(ctx);
     }
   });

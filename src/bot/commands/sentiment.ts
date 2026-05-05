@@ -1,81 +1,44 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// /sentiment command: Shows the Crypto Fear & Greed Index.
-// Data source: alternative.me (free, updates daily).
+// /sentiment command: Fear & Greed Index with refresh button.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { CommandContext, Context } from 'grammy';
+import { CommandContext, Context, InlineKeyboard } from 'grammy';
 import { FearGreedService } from '../../services/FearGreedService';
-import { log } from '../../utils/logger';
 
-export async function handleSentiment(ctx: CommandContext<Context>): Promise<void> {
-  const loadingMsg = await ctx.reply('📊 Fetching market sentiment...', { parse_mode: 'HTML' });
+export async function handleSentiment(ctx: CommandContext<Context> | Context): Promise<void> {
+  if (ctx.callbackQuery?.data === 'exec_sentiment_refresh') {
+    await ctx.answerCallbackQuery('🔄 Updating sentiment data...');
+  }
 
   try {
     const data = await FearGreedService.getIndex();
-
-    if (!data) {
-      await ctx.api.editMessageText(
-        ctx.chat!.id,
-        loadingMsg.message_id,
-        '❌ <b>Failed to fetch sentiment data.</b>\n\nCoba lagi beberapa saat.',
-        { parse_mode: 'HTML' }
-      );
-      return;
-    }
-
-    const { value, classification, timestamp } = data;
-    const date = new Date(timestamp).toLocaleDateString('id-ID', {
-      day: 'numeric', month: 'long', year: 'numeric',
-    });
-
-    // Build gauge bar (20 chars wide)
-    const filledCount = Math.round((value / 100) * 20);
-    const gauge = '█'.repeat(filledCount) + '░'.repeat(20 - filledCount);
-
-    // Determine color emoji and trading implication
-    let emoji = '';
-    let color = '';
-    let advice = '';
-    if (value <= 20)       { emoji = '🔴'; color = 'Extreme Fear';  advice = 'Pasar sangat takut. Ini sering menjadi <b>peluang beli</b> bagi contrarian trader. DYOR!'; }
-    else if (value <= 40)  { emoji = '🟠'; color = 'Fear';          advice = 'Sentimen negatif dominan. Hati-hati, volatilitas tinggi. Wait and see.'; }
-    else if (value <= 60)  { emoji = '🟡'; color = 'Neutral';       advice = 'Pasar sedang seimbang. Tidak ada sinyal kuat ke arah mana pun.'; }
-    else if (value <= 80)  { emoji = '🟢'; color = 'Greed';         advice = 'Pasar mulai serakah. Pertimbangkan untuk <b>take profit</b> sebagian.'; }
-    else                   { emoji = '🔴'; color = 'Extreme Greed'; advice = '⚠️ Pasar sangat serakah. Ini sering mendahului <b>koreksi tajam</b>. Waspada!'; }
+    
+    const emoji = 
+      data.classification === 'Extreme Fear' ? '😨' :
+      data.classification === 'Fear' ? '😨' :
+      data.classification === 'Neutral' ? '😐' :
+      data.classification === 'Greed' ? '🤑' : '🚀';
 
     const message = [
-      `📊 <b>Crypto Fear &amp; Greed Index</b>`,
+      `🎭 <b>Market Sentiment Analysis</b>`,
       ``,
-      `${emoji} <b>${value} / 100</b> — ${classification}`,
+      `Current Index: <b>${data.value}</b>`,
+      `Classification: <b>${emoji} ${data.classification}</b>`,
       ``,
-      `<code>[${gauge}]</code>`,
-      `<code> 0   Extreme Fear           Extreme Greed 100</code>`,
-      ``,
-      `📅 Data: <i>${date}</i>`,
-      ``,
-      `─────────────────────────`,
-      `💡 <b>Interpretasi:</b>`,
-      advice,
-      `─────────────────────────`,
-      ``,
-      `<i>Skala:</i>`,
-      `<i>0-24: Extreme Fear  |  25-44: Fear</i>`,
-      `<i>45-55: Neutral  |  56-75: Greed  |  76-100: Extreme Greed</i>`,
-      ``,
-      `<i>⚠ Bukan saran finansial. Selalu lakukan riset sendiri.</i>`,
+      `<i>Indeks ini mengukur emosi pasar kripto berdasarkan volatilitas, volume, dan media sosial.</i>`,
     ].join('\n');
 
-    await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, message, {
-      parse_mode: 'HTML',
-    });
+    const keyboard = new InlineKeyboard()
+      .text('🔄 Cek Lagi', 'exec_sentiment_refresh').row()
+      .text('⬅️ Back to Menu', 'back_to_menu');
 
-    log.info('Sentiment command', { userId: ctx.from?.id, value, classification });
-  } catch (err) {
-    log.error('Sentiment command failed', { error: (err as Error).message });
-    await ctx.api.editMessageText(
-      ctx.chat!.id,
-      loadingMsg.message_id,
-      '❌ Gagal mengambil data sentimen.',
-      { parse_mode: 'HTML' }
-    ).catch(() => {});
+    if (ctx.callbackQuery) {
+      await ctx.editMessageText(message, { parse_mode: 'HTML', reply_markup: keyboard });
+    } else {
+      await ctx.reply(message, { parse_mode: 'HTML', reply_markup: keyboard });
+    }
+  } catch (e) {
+    const errMsg = '❌ Gagal mengambil data sentimen.';
+    if (ctx.callbackQuery) await ctx.editMessageText(errMsg); else await ctx.reply(errMsg);
   }
 }
