@@ -1,149 +1,55 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// /watch command: Add/remove assets from personal watchlist.
-// /watchlist: Show current watchlist with live prices.
+// /watchlist command: View tracked tokens with refresh button.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { CommandContext, Context } from 'grammy';
+import { CommandContext, Context, InlineKeyboard } from 'grammy';
 import { db } from '../../db';
 import { PriceService } from '../../services/PriceService';
-import { formatPrice, formatPct } from '../../utils/formatter';
-import { log } from '../../utils/logger';
 
-// Usage:
-//   /watch BTCUSDT            → Add to watchlist
-//   /watch BTCUSDT 95000      → Add with entry target
-//   /watch remove BTCUSDT     → Remove from watchlist
-//   /watchlist                → Show watchlist with live prices
+export async function handleWatchlist(ctx: CommandContext<Context> | Context): Promise<void> {
+  const userId = ctx.from?.id;
+  if (!userId) return;
 
-const MAX_WATCHLIST = 15;
-
-export async function handleWatch(ctx: CommandContext<Context>): Promise<void> {
-  const userId = String(ctx.from!.id);
-  const args = (ctx.match?.trim() ?? '').split(/\s+/).filter(Boolean);
-
-  if (!args.length) {
-    await ctx.reply([
-      `👁 <b>Watchlist — Cara Pakai:</b>`,
-      ``,
-      `<code>/watch BTCUSDT</code> — Tambah ke watchlist`,
-      `<code>/watch BTCUSDT 95000</code> — Tambah dengan target harga`,
-      `<code>/watch remove BTCUSDT</code> — Hapus dari watchlist`,
-      `<code>/watchlist</code> — Lihat semua koin incaran`,
-    ].join('\n'), { parse_mode: 'HTML' });
-    return;
+  if (ctx.callbackQuery?.data === 'exec_watchlist_refresh') {
+    await ctx.answerCallbackQuery('🔄 Updating watchlist prices...');
   }
 
-  // Remove
-  if (args[0].toLowerCase() === 'remove') {
-    const symbol = args[1]?.toUpperCase();
-    if (!symbol) {
-      await ctx.reply('Usage: <code>/watch remove BTCUSDT</code>', { parse_mode: 'HTML' });
-      return;
-    }
-    const deleted = await db('watchlist').where({ user_id: userId, symbol }).delete();
-    await ctx.reply(
-      deleted > 0
-        ? `✅ <b>${symbol}</b> dihapus dari watchlist.`
-        : `ℹ️ <b>${symbol}</b> tidak ada di watchlist kamu.`,
-      { parse_mode: 'HTML' }
-    );
-    return;
-  }
-
-  // Add
-  const symbol = args[0].toUpperCase();
-  const entryPrice = args[1] ? parseFloat(args[1]) : null;
-
-  // Max watchlist check
-  const count = await db('watchlist').where({ user_id: userId }).count('id as c').first();
-  if (parseInt(String((count as any)?.c ?? 0)) >= MAX_WATCHLIST) {
-    await ctx.reply(
-      `⚠️ Watchlist penuh! Maksimum <b>${MAX_WATCHLIST} item</b>.\nHapus dulu yang tidak diperlukan: <code>/watch remove &lt;symbol&gt;</code>`,
-      { parse_mode: 'HTML' }
-    );
-    return;
-  }
-
-  // Validate by fetching price
-  let currentPrice: number | null = null;
   try {
-    const priceData = await PriceService.getPrice(symbol);
-    currentPrice = priceData.price;
-  } catch {
-    // Not a standard crypto, might be Solana token CA — allow it anyway
-  }
-
-  await db('watchlist')
-    .insert({
-      user_id: userId,
-      symbol,
-      asset_type: currentPrice !== null ? 'crypto' : 'solana_token',
-      entry_price: entryPrice ?? null,
-    })
-    .onConflict(['user_id', 'symbol'])
-    .merge({ entry_price: entryPrice ?? null });
-
-  const lines = [
-    `✅ <b>${symbol}</b> ditambahkan ke watchlist!`,
-  ];
-  if (currentPrice) lines.push(`Harga sekarang: <b>${formatPrice(currentPrice)}</b>`);
-  if (entryPrice) lines.push(`Target entry: <b>${formatPrice(entryPrice)}</b>`);
-  lines.push(``, `Lihat semua: /watchlist`);
-
-  await ctx.reply(lines.join('\n'), { parse_mode: 'HTML' });
-
-  log.info('Watchlist add', { userId, symbol, entryPrice });
-}
-
-export async function handleWatchlist(ctx: CommandContext<Context>): Promise<void> {
-  const userId = String(ctx.from!.id);
-  const loadingMsg = await ctx.reply('👁 <b>Fetching watchlist prices...</b>', { parse_mode: 'HTML' });
-
-  const items = await db('watchlist').where({ user_id: userId }).orderBy('created_at', 'asc');
-
-  if (items.length === 0) {
-    await ctx.api.editMessageText(
-      ctx.chat!.id,
-      loadingMsg.message_id,
-      [
-        `👁 <b>Watchlist Kamu Kosong</b>`,
-        ``,
-        `Tambahkan koin incaran:`,
-        `<code>/watch BTCUSDT</code>`,
-        `<code>/watch SOLUSDT 170</code> <i>(dengan target harga)</i>`,
-      ].join('\n'),
-      { parse_mode: 'HTML' }
-    );
-    return;
-  }
-
-  const rows: string[] = [];
-  for (const item of items) {
-    try {
-      const priceData = await PriceService.getPrice(item.symbol);
-      const changeEmoji = priceData.change24h >= 0 ? '🟢' : '🔴';
-      const entryLine = item.entry_price
-        ? ` | Target: <b>${formatPrice(parseFloat(item.entry_price))}</b>`
-        : '';
-      rows.push(
-        `${changeEmoji} <b>${item.symbol}</b>: ${formatPrice(priceData.price)} (${priceData.change24h >= 0 ? '+' : ''}${formatPct(priceData.change24h)})${entryLine}`
-      );
-    } catch {
-      rows.push(`⚪ <b>${item.symbol}</b>: <i>Harga tidak tersedia</i>`);
+    const items = await db('watchlist').where({ user_id: userId.toString() });
+    if (items.length === 0) {
+      const msg = '👁 Watchlist lo masih kosong. Gunakan <code>/watch &lt;symbol&gt;</code> buat nambahin.';
+      if (ctx.callbackQuery) return (ctx as any).editMessageText(msg, { parse_mode: 'HTML' });
+      return (ctx as any).reply(msg, { parse_mode: 'HTML' });
     }
+
+    let message = `👁 <b>Your Watchlist</b>\n\n`;
+    
+    for (const item of items) {
+      const { price, change24h } = await PriceService.getPrice(item.symbol);
+      const isIdr = item.symbol.endsWith('.JK') || item.symbol.endsWith('.ID');
+      const cur = isIdr ? 'Rp' : '$';
+      
+      message += `• <code>${item.symbol}</code>\n`;
+      message += `  Price: ${cur}${price.toLocaleString()} (${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}%)\n`;
+      if (item.entry_price) {
+        message += `  Target: ${cur}${parseFloat(item.entry_price).toLocaleString()}\n`;
+      }
+      message += `\n`;
+    }
+
+    message += `💡 <i>Tap simbol untuk copy ticker.</i>`;
+
+    const keyboard = new InlineKeyboard()
+      .text('🔄 Refresh Harga', 'exec_watchlist_refresh').row()
+      .text('⬅️ Back to Menu', 'back_to_menu');
+
+    if (ctx.callbackQuery) {
+      await ctx.editMessageText(message, { parse_mode: 'HTML', reply_markup: keyboard });
+    } else {
+      await ctx.reply(message, { parse_mode: 'HTML', reply_markup: keyboard });
+    }
+  } catch (e) {
+    const errMsg = '❌ Gagal memuat watchlist.';
+    if (ctx.callbackQuery) await ctx.editMessageText(errMsg); else await ctx.reply(errMsg);
   }
-
-  const message = [
-    `👁 <b>Watchlist — ${items.length} Aset</b>`,
-    ``,
-    rows.join('\n'),
-    ``,
-    `<i>Update: ${new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB</i>`,
-    ``,
-    `Hapus: <code>/watch remove &lt;symbol&gt;</code>`,
-  ].join('\n');
-
-  await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, message, {
-    parse_mode: 'HTML',
-  });
 }

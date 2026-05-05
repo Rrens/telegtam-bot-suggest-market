@@ -65,6 +65,9 @@ export function createBot(): Bot {
       if (data.startsWith('exec_solana')) return handleSolana(ctx);
       if (data.startsWith('exec_today')) return handleToday(ctx);
       if (data.startsWith('exec_sentiment')) return handleSentiment(ctx);
+      if (data.startsWith('exec_watchlist')) return handleWatchlist(ctx);
+      if (data.startsWith('exec_portfolio')) return handlePortfolio(ctx);
+      if (data.startsWith('exec_check')) return handleCheck(ctx);
       
       return handleMenuCallbacks(ctx);
     }

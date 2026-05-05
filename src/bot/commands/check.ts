@@ -1,90 +1,56 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// /check command: Analyzes a Solana token contract address for rug pull risks.
-// Usage: /check <contract_address>
+// /check command: RugCheck security analysis with copyable CA and action buttons.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { CommandContext, Context } from 'grammy';
-import { RugCheckService } from '../../services/RugCheckService';
-import { log } from '../../utils/logger';
+import { CommandContext, Context, InlineKeyboard } from 'grammy';
+import axios from 'axios';
 
-// Solana address validation: base58, 32-44 chars
-const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
-
-export async function handleCheck(ctx: CommandContext<Context>): Promise<void> {
-  const input = ctx.match?.trim() ?? '';
-
-  if (!input) {
-    await ctx.reply([
-      `🛡️ <b>RugCheck — Cara Pakai:</b>`,
-      ``,
-      `<code>/check &lt;contract_address&gt;</code>`,
-      ``,
-      `<i>Contoh:</i>`,
-      `<code>/check So11111111111111111111111111111111111111112</code>`,
-      ``,
-      `Bot akan mengecek:`,
-      `• Apakah LP sudah di-burn atau di-lock`,
-      `• Apakah Mint Authority sudah dicabut`,
-      `• % kepemilikan top holder`,
-      `• Skor keamanan keseluruhan dari RugCheck.xyz`,
-    ].join('\n'), { parse_mode: 'HTML' });
-    return;
+export async function handleCheck(ctx: CommandContext<Context> | Context): Promise<void> {
+  let ca = '';
+  
+  if (ctx.callbackQuery?.data?.startsWith('exec_check_')) {
+    ca = ctx.callbackQuery.data.replace('exec_check_', '');
+    await ctx.answerCallbackQuery('🔍 Re-scanning CA...');
+  } else {
+    // Normal command: /check <CA>
+    const text = (ctx as any).message?.text || '';
+    ca = text.split(' ')[1];
   }
 
-  if (!SOLANA_ADDRESS_RE.test(input)) {
-    await ctx.reply(
-      `❌ <b>Format address tidak valid.</b>\n\nPastikan lo paste alamat kontrak Solana yang benar (bukan nama koin).`,
-      { parse_mode: 'HTML' }
-    );
-    return;
+  if (!ca) {
+    return (ctx as any).reply('🛡️ Silakan masukkan alamat kontrak (CA) Solana.\nFormat: <code>/check [CA]</code>', { parse_mode: 'HTML' });
   }
 
-  const loadingMsg = await ctx.reply(
-    `🛡️ <b>Analyzing contract...</b>\n\n<code>${input.slice(0, 8)}...${input.slice(-4)}</code>\n\nFetching report from RugCheck.xyz...`,
-    { parse_mode: 'HTML' }
-  );
+  const loadingMsg = await ctx.reply(`🔍 Analyzing security for <code>${ca}</code>...`, { parse_mode: 'HTML' });
 
   try {
-    const report = await RugCheckService.getReport(input);
+    const response = await axios.get(`https://api.rugcheck.xyz/v1/tokens/${ca}/report`);
+    const report = response.data;
 
-    if (!report) {
-      await ctx.api.editMessageText(
-        ctx.chat!.id,
-        loadingMsg.message_id,
-        [
-          `❌ <b>Tidak bisa mengambil data untuk address ini.</b>`,
-          ``,
-          `Kemungkinan penyebab:`,
-          `• Token ini belum ada di RugCheck.xyz`,
-          `• Address bukan token SPL Solana`,
-          `• Token terlalu baru (belum terindeks)`,
-          ``,
-          `Coba cek manual: <a href="https://rugcheck.xyz/tokens/${input}">rugcheck.xyz</a>`,
-        ].join('\n'),
-        { parse_mode: 'HTML', link_preview_options: { is_disabled: true } }
-      );
-      return;
-    }
+    const riskLevel = report.score < 100 ? '✅ EXCELLENT' : report.score < 500 ? '⚠️ WARNING' : '🚨 DANGER';
+    
+    const message = [
+      `🛡️ <b>RugCheck Security Report</b>`,
+      ``,
+      `CA: <code>${ca}</code>`,
+      `Score: <b>${report.score}</b> (${riskLevel})`,
+      ``,
+      `<b>Risk Breakdown:</b>`,
+      `• Mint Authority: ${!report.mintAuthority ? '🟢 Revoked' : '🔴 ACTIVE'}`,
+      `• Freeze Authority: ${!report.freezeAuthority ? '🟢 Revoked' : '🔴 ACTIVE'}`,
+      `• LP Burned: ${report.markets?.[0]?.lp?.lpBurned ? '🟢 Yes' : '🔴 No'}`,
+      `• Top Holders: ${report.topHolders?.length || 0} analyzed`,
+      ``,
+      `<i>💡 Tap CA di atas buat copy alamatnya.</i>`,
+    ].join('\n');
 
-    const message = RugCheckService.formatReport(report);
-    await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, message, {
-      parse_mode: 'HTML',
-      link_preview_options: { is_disabled: true },
-    });
+    const keyboard = new InlineKeyboard()
+      .url('🌐 Full Report on RugCheck', `https://rugcheck.xyz/tokens/${ca}`).row()
+      .text('🔄 Scan Again', `exec_check_${ca}`).row()
+      .text('⬅️ Back to Menu', 'back_to_menu');
 
-    log.info('RugCheck command executed', {
-      userId: ctx.from?.id,
-      mint: input,
-      riskLevel: report.riskLevel,
-      score: report.score,
-    });
+    await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, message, { parse_mode: 'HTML', reply_markup: keyboard });
   } catch (err) {
-    log.error('Check command failed', { error: (err as Error).message });
-    await ctx.api.editMessageText(
-      ctx.chat!.id,
-      loadingMsg.message_id,
-      `❌ <b>Gagal fetch data.</b> Coba lagi nanti.`,
-      { parse_mode: 'HTML' }
-    ).catch(() => {});
+    await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, '❌ Gagal melakukan scan. Pastikan CA Solana valid.');
   }
 }

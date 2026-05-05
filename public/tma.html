@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title id="titleTag">Pro Terminal</title>
+    <title>Antigravity | Pro Terminal</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -12,285 +13,173 @@
             --text: var(--tg-theme-text-color, #f8fafc);
             --hint: var(--tg-theme-hint-color, #94a3b8);
             --primary: var(--tg-theme-button-color, #3b82f6);
-            --secondary: #6366f1;
             --card: rgba(255, 255, 255, 0.05);
             --success: #10b981;
             --danger: #ef4444;
-            --warning: #f59e0b;
         }
 
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg);
             color: var(--text);
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            margin: 0; padding: 0;
+            overflow: hidden;
         }
 
         /* Bottom Nav */
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(15, 23, 42, 0.9);
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(20px);
-            display: flex;
-            justify-content: space-around;
+            display: flex; justify-content: space-around;
             padding: 12px 0 24px;
             border-top: 1px solid rgba(255,255,255,0.1);
             z-index: 1000;
         }
 
         .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: var(--hint);
-            font-size: 0.65rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            gap: 4px;
+            display: flex; flex-direction: column; align-items: center;
+            color: var(--hint); font-size: 0.65rem; font-weight: 600; gap: 4px;
         }
 
-        .nav-item.active {
-            color: var(--primary);
-        }
-
-        .nav-icon {
-            font-size: 1.4rem;
-        }
+        .nav-item.active { color: var(--primary); }
+        .nav-icon { font-size: 1.4rem; }
 
         /* Views */
         .view {
-            display: none;
+            display: none; height: 100vh;
             padding: 16px 16px 120px;
-            animation: slideUp 0.3s ease-out;
+            box-sizing: border-box;
+            overflow-y: auto;
         }
 
-        .view.active {
-            display: block;
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 20px;
-        }
-
-        h1 { font-size: 1.2rem; font-weight: 800; margin: 0; }
+        .view.active { display: block; }
 
         .card {
-            background: var(--card);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 16px;
-            border: 1px solid rgba(255,255,255,0.05);
+            background: var(--card); border-radius: 20px; padding: 20px;
+            margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05);
         }
 
-        .stat-label { font-size: 0.7rem; color: var(--hint); text-transform: uppercase; margin-bottom: 4px; }
-        .stat-value { font-size: 1.8rem; font-weight: 800; }
+        h1 { font-size: 1.2rem; font-weight: 800; margin: 0 0 20px; }
 
-        .btn-add {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 0.8rem;
-        }
-
-        /* List Items */
         .list-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 16px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer;
         }
 
-        .list-item:last-child { border-bottom: none; }
-
-        .symbol { font-weight: 700; font-size: 1rem; }
+        .symbol { font-weight: 700; font-size: 0.95rem; }
         .sub { font-size: 0.75rem; color: var(--hint); }
 
-        .price-col { text-align: right; }
-        .pnl-badge {
-            font-size: 0.75rem;
-            font-weight: 800;
-            padding: 2px 6px;
-            border-radius: 4px;
+        /* Chart View Specific */
+        #chart-container {
+            width: 100%; height: 60vh;
+            border-radius: 16px; overflow: hidden;
+            background: #000; margin-bottom: 16px;
         }
 
-        /* Forms */
-        .form-group { margin-bottom: 16px; }
-        label { display: block; font-size: 0.75rem; margin-bottom: 6px; color: var(--hint); }
-        input, select {
-            width: 100%;
-            padding: 14px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            color: white;
-            font-family: inherit;
-            box-sizing: border-box;
+        .tf-bar {
+            display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto;
+            padding-bottom: 8px;
         }
 
-        .btn-submit {
-            width: 100%;
-            padding: 16px;
-            background: var(--primary);
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-weight: 800;
-            margin-top: 10px;
+        .tf-btn {
+            padding: 6px 12px; background: var(--card);
+            border-radius: 8px; font-size: 0.75rem; font-weight: 600;
+            white-space: nowrap; border: 1px solid rgba(255,255,255,0.1);
+            color: var(--hint);
         }
 
-        /* Utils */
+        .tf-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .search-bar {
+            display: flex; gap: 10px; margin-bottom: 16px;
+        }
+        .search-bar input {
+            flex: 1; padding: 12px; background: var(--card);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+            color: white; outline: none;
+        }
+
         .pos { color: var(--success); }
         .neg { color: var(--danger); }
-        .delete-btn { color: var(--danger); font-size: 0.8rem; margin-top: 4px; display: inline-block; }
-
-        /* Market Pulse Custom */
-        .pulse-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-        .mini-card { background: var(--card); padding: 12px; border-radius: 16px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <!-- HOME VIEW: Portfolio & Assets -->
-    <div id="home" class="view active">
-        <header>
-            <h1>Portfolio</h1>
-            <button class="btn-add" onclick="showModal('asset')">+ Add Asset</button>
-        </header>
-
-        <div class="card" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), transparent);">
-            <div class="stat-label">Total Net Worth (USD)</div>
-            <div class="stat-value" id="netWorth">$-.--</div>
-            <div class="pos" id="totalPnl" style="font-weight: 700; font-size: 0.9rem; margin-top: 4px;">--</div>
+    <!-- PORTFOLIO VIEW -->
+    <div id="view-porto" class="view active">
+        <h1>My Portfolio</h1>
+        <div class="card" id="portCard">
+            <div style="font-size: 0.7rem; color: var(--hint); text-transform: uppercase;">Total Balance</div>
+            <div style="font-size: 2rem; font-weight: 800;" id="totalBalance">$0.00</div>
+            <div id="totalPnl" class="pos" style="font-weight: 700; margin-top: 4px;">+0.00%</div>
         </div>
-
         <div class="card">
-            <div class="stat-label" style="margin-bottom: 12px;">Assets Holdings</div>
-            <div id="assetList"></div>
+            <div style="font-size: 0.8rem; font-weight: 700; margin-bottom: 12px;">Holdings</div>
+            <div id="portoList">Loading...</div>
         </div>
     </div>
 
-    <!-- MARKET VIEW: Intelligence & Watchlist -->
-    <div id="market" class="view">
-        <header>
-            <h1>Market Pulse</h1>
-            <button class="btn-add" onclick="showModal('watch')">+ Watch</button>
-        </header>
-
-        <div class="pulse-grid">
-            <div class="mini-card">
-                <div class="stat-label">Fear & Greed</div>
-                <div id="fgValue" style="font-size: 1.4rem; font-weight: 800;">--</div>
-                <div id="fgLabel" class="sub">--</div>
-            </div>
-            <div class="mini-card">
-                <div class="stat-label">USDT/IDR</div>
-                <div id="kursValue" style="font-size: 1rem; font-weight: 800; margin-top: 4px;">--</div>
-                <div class="sub">Kurs Real-time</div>
-            </div>
+    <!-- CHART VIEW -->
+    <div id="view-chart" class="view">
+        <h1>Live Charts</h1>
+        
+        <div class="search-bar">
+            <input type="text" id="symbolSearch" placeholder="Search (e.g. BTCUSDT, SOL...)">
+            <button class="tf-btn active" style="padding: 0 20px;" onclick="loadChart()">View</button>
         </div>
 
-        <div class="card">
-            <div class="stat-label" style="margin-bottom: 12px;">Your Watchlist</div>
-            <div id="watchList"></div>
+        <div class="tf-bar">
+            <div class="tf-btn" data-tf="1" onclick="changeTF('1', this)">1m</div>
+            <div class="tf-btn" data-tf="5" onclick="changeTF('5', this)">5m</div>
+            <div class="tf-btn active" data-tf="15" onclick="changeTF('15', this)">15m</div>
+            <div class="tf-btn" data-tf="60" onclick="changeTF('60', this)">1h</div>
+            <div class="tf-btn" data-tf="240" onclick="changeTF('240', this)">4h</div>
+            <div class="tf-btn" data-tf="D" onclick="changeTF('D', this)">1D</div>
         </div>
 
+        <div id="chart-container"></div>
+
+        <div class="card" id="assetInfo" style="display: none;">
+            <div id="infoSymbol" style="font-weight: 800; font-size: 1.2rem;">BTCUSDT</div>
+            <div id="infoPrice" style="font-size: 1.1rem; margin-top: 4px;">$0.00</div>
+        </div>
+    </div>
+
+    <!-- MARKET VIEW -->
+    <div id="view-market" class="view">
+        <h1>Market Pulse</h1>
+        <div class="card" id="watchList">Loading watchlist...</div>
         <div class="card">
-            <div class="stat-label" style="margin-bottom: 12px;">Recent AI Signals</div>
+            <div style="font-size: 0.8rem; font-weight: 700; margin-bottom: 12px;">Recent AI Signals</div>
             <div id="signalsList"></div>
         </div>
     </div>
 
-    <!-- ALERTS VIEW: Manage Notifications -->
-    <div id="alerts" class="view">
-        <header>
-            <h1>Alert Center</h1>
-        </header>
-
+    <!-- SCANNER VIEW -->
+    <div id="view-scan" class="view">
+        <h1>Rug Scanner</h1>
         <div class="card">
-            <div class="stat-label" style="margin-bottom: 12px;">Set New Technical Alert</div>
-            <div class="form-group">
-                <label>Asset Symbol (e.g BTCUSDT)</label>
-                <input type="text" id="alertSymbol" placeholder="Symbol">
-            </div>
-            <div class="form-group">
-                <label>Indicator</label>
-                <select id="alertInd">
-                    <option value="RSI">RSI (Relative Strength Index)</option>
-                    <option value="MA_CROSS">Moving Average Cross</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Condition</label>
-                <select id="alertCond">
-                    <option value="OVERSOLD">Oversold (RSI < 30)</option>
-                    <option value="OVERBOUGHT">Overbought (RSI > 70)</option>
-                    <option value="GOLDEN_CROSS">Golden Cross (Bullish)</option>
-                    <option value="DEATH_CROSS">Death Cross (Bearish)</option>
-                </select>
-            </div>
-            <button class="btn-submit" onclick="submitAlert()">Activate Alert</button>
+            <input type="text" id="scanCa" placeholder="Paste CA here..." style="width:100%; padding:14px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:white; margin-bottom:12px; box-sizing:border-box;">
+            <button onclick="runScan()" style="width:100%; padding:16px; background:var(--primary); border:none; border-radius:12px; color:white; font-weight:800;">Analyze Contract</button>
         </div>
+        <div id="scanResult"></div>
     </div>
 
-    <!-- SCANNER VIEW: RugCheck -->
-    <div id="scanner" class="view">
-        <header>
-            <h1>Security Scanner</h1>
-        </header>
-        <div class="card">
-            <div class="stat-label">Solana Contract Analyzer</div>
-            <input type="text" id="scanCa" placeholder="Paste CA here..." style="margin: 10px 0;">
-            <button class="btn-submit" id="scanActionBtn" onclick="runScan()">Analyze Rug Risk</button>
-        </div>
-        <div id="scanRes" style="display:none"></div>
-    </div>
-
-    <!-- ADD MODAL (Simple overlay) -->
-    <div id="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:2000; padding:20px; align-items:center; justify-content:center; display:none;">
-        <div class="card" style="width:100%; max-width:400px; background:var(--bg);">
-            <h2 id="modalTitle">Add Item</h2>
-            <div id="modalFields"></div>
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button class="btn-submit" style="background:var(--card)" onclick="hideModal()">Cancel</button>
-                <button class="btn-submit" id="modalConfirm">Save</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bottom Navigation Bar -->
+    <!-- BOTTOM NAV -->
     <nav class="bottom-nav">
-        <div class="nav-item active" onclick="switchView('home', this)">
-            <span class="nav-icon">📊</span>
-            <span>Porto</span>
+        <div class="nav-item active" onclick="switchTab('porto')">
+            <span class="nav-icon">📊</span><span>Porto</span>
         </div>
-        <div class="nav-item" onclick="switchView('market', this)">
-            <span class="nav-icon">📈</span>
-            <span>Market</span>
+        <div class="nav-item" onclick="switchTab('chart')">
+            <span class="nav-icon">📉</span><span>Chart</span>
         </div>
-        <div class="nav-item" onclick="switchView('alerts', this)">
-            <span class="nav-icon">🔔</span>
-            <span>Alerts</span>
+        <div class="nav-item" onclick="switchTab('market')">
+            <span class="nav-icon">🔥</span><span>Market</span>
         </div>
-        <div class="nav-item" onclick="switchView('scanner', this)">
-            <span class="nav-icon">🛡️</span>
-            <span>Scanner</span>
+        <div class="nav-item" onclick="switchTab('scan')">
+            <span class="nav-icon">🛡️</span><span>Scan</span>
         </div>
     </nav>
 
@@ -300,197 +189,144 @@
         tg.ready();
 
         const userId = tg.initDataUnsafe?.user?.id || 12345;
+        let currentSymbol = 'BINANCE:BTCUSDT';
+        let currentTF = '15';
+        let tvWidget = null;
 
-        // Fetch Bot Name and Stats
-        async function fetchConfig() {
-            try {
-                const res = await fetch('/api/stats?token=ADMIN_TOKEN_HERE');
-                const data = await res.json();
-                if (data.botName) {
-                    document.getElementById('greeting').innerText = `Hello, ${user?.first_name || 'Trader'}! Welcome to ${data.botName}.`;
-                    document.title = `${data.botName} | Pro Terminal`;
-                    document.getElementById('titleTag').innerText = `${data.botName} | Pro Terminal`;
-                }
-            } catch (e) {}
-        }
-        fetchConfig();
-
-        // View Switching
-        function switchView(viewId, el) {
+        function switchTab(tabId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
-            el.classList.add('active');
+            document.getElementById(`view-${tabId}`).classList.add('active');
+            
+            // Highlight nav
+            const navItems = document.querySelectorAll('.nav-item');
+            const idx = ['porto', 'chart', 'market', 'scan'].indexOf(tabId);
+            navItems[idx].classList.add('active');
 
-            if (viewId === 'home') loadHome();
-            if (viewId === 'market') loadMarket();
+            if (tabId === 'porto') loadPorto();
+            if (tabId === 'market') loadMarket();
+            if (tabId === 'chart') loadChart();
         }
 
-        async function loadHome() {
+        function loadChart(symbol = null) {
+            if (symbol) {
+                // Format symbol for TV
+                if (!symbol.includes(':')) {
+                    if (symbol.endsWith('.JK')) symbol = 'IDX:' + symbol.replace('.JK', '');
+                    else symbol = 'BINANCE:' + symbol;
+                }
+                currentSymbol = symbol;
+                document.getElementById('symbolSearch').value = symbol.split(':').pop();
+            } else {
+                const searchVal = document.getElementById('symbolSearch').value.toUpperCase();
+                if (searchVal) {
+                    currentSymbol = searchVal.includes(':') ? searchVal : 'BINANCE:' + searchVal;
+                }
+            }
+
+            tvWidget = new TradingView.widget({
+                "autosize": true,
+                "symbol": currentSymbol,
+                "interval": currentTF,
+                "timezone": "Asia/Jakarta",
+                "theme": "dark",
+                "style": "1",
+                "locale": "en",
+                "toolbar_bg": "#f1f3f6",
+                "enable_publishing": false,
+                "hide_top_toolbar": false,
+                "hide_legend": false,
+                "save_image": false,
+                "container_id": "chart-container"
+            });
+        }
+
+        function changeTF(tf, el) {
+            currentTF = tf;
+            document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            loadChart();
+        }
+
+        async function loadPorto() {
             try {
                 const res = await fetch(`/api/tma/portfolio?user_id=${userId}`);
                 const data = await res.json();
-                
-                document.getElementById('netWorth').innerText = `$${data.totalValue.toLocaleString(undefined, {maximumFractionDigits:2})}`;
-                const pnl = document.getElementById('totalPnl');
-                pnl.innerText = `${data.pnl >= 0 ? '+' : ''}$${data.pnl.toLocaleString(undefined, {maximumFractionDigits:2})}`;
-                pnl.className = data.pnl >= 0 ? 'pos' : 'neg';
+                document.getElementById('totalBalance').innerText = `$${data.totalValue.toLocaleString()}`;
+                document.getElementById('totalPnl').innerText = `${data.pnl >= 0 ? '+' : ''}$${data.pnl.toLocaleString()}`;
+                document.getElementById('totalPnl').className = data.pnl >= 0 ? 'pos' : 'neg';
 
                 let html = '';
                 data.assets.forEach(a => {
-                    const cur = a.currency || '$';
                     html += `
-                        <div class="list-item">
-                            <div>
-                                <div class="symbol">${a.symbol}</div>
-                                <div class="sub">${a.amount} units</div>
-                                <div class="delete-btn" onclick="deleteItem('${a.symbol}', 'asset')">Delete</div>
-                            </div>
-                            <div class="price-col">
-                                <div class="symbol">${cur}${a.currentValue.toLocaleString()}</div>
-                                <div class="pnl-badge ${a.pnl >= 0 ? 'pos' : 'neg'}">${a.pnl >= 0 ? '+' : ''}${cur}${a.pnl.toLocaleString()}</div>
+                        <div class="list-item" onclick="viewOnChart('${a.symbol}')">
+                            <div><div class="symbol">${a.symbol}</div><div class="sub">${a.amount} units</div></div>
+                            <div style="text-align:right">
+                                <div class="symbol">$${a.currentValue.toLocaleString()}</div>
+                                <div class="${a.pnl >= 0 ? 'pos' : 'neg'}" style="font-size:0.7rem">${a.pnl >= 0 ? '+' : ''}${a.pnl.toLocaleString()}</div>
                             </div>
                         </div>
                     `;
                 });
-                document.getElementById('assetList').innerHTML = html || '<div class="sub" style="text-align:center">No assets</div>';
-            } catch (e) { console.error(e); }
+                document.getElementById('portoList').innerHTML = html || 'No holdings';
+            } catch (e) {}
         }
 
         async function loadMarket() {
             try {
-                const [pulseRes, watchRes] = await Promise.all([
+                const [mRes, wRes] = await Promise.all([
                     fetch('/api/tma/market-pulse'),
                     fetch(`/api/tma/watchlist?user_id=${userId}`)
                 ]);
-                const pulse = await pulseRes.json();
-                const watch = await watchRes.json();
+                const market = await mRes.json();
+                const watch = await wRes.json();
 
-                // Pulse
-                if (pulse.fearGreed) {
-                    document.getElementById('fgValue').innerText = pulse.fearGreed.value;
-                    document.getElementById('fgLabel').innerText = pulse.fearGreed.classification;
-                }
-                
-                // Kurs (Simplified)
-                const kursRes = await fetch('/api/stats?token=ADMIN_TOKEN_HERE'); // We might need a direct kurs API
-                document.getElementById('kursValue').innerText = 'Rp16,050'; // Placeholder logic
-
-                // Watchlist
-                let wHtml = '';
+                let wHtml = '<div style="font-size:0.8rem; font-weight:700; margin-bottom:12px;">Watchlist</div>';
                 watch.forEach(w => {
-                    const cur = w.currency || '$';
                     wHtml += `
-                        <div class="list-item">
-                            <div>
-                                <div class="symbol">${w.symbol}</div>
-                                <div class="sub" onclick="deleteItem('${w.symbol}', 'watchlist')">Remove</div>
-                            </div>
-                            <div class="price-col">
-                                <div class="symbol">${cur}${w.price.toLocaleString()}</div>
-                                <div class="${w.change24h >= 0 ? 'pos' : 'neg'}">${w.change24h.toFixed(2)}%</div>
+                        <div class="list-item" onclick="viewOnChart('${w.symbol}')">
+                            <div class="symbol">${w.symbol}</div>
+                            <div style="text-align:right">
+                                <div class="symbol">$${w.price.toLocaleString()}</div>
+                                <div class="${w.change24h >= 0 ? 'pos' : 'neg'}" style="font-size:0.7rem">${w.change24h.toFixed(2)}%</div>
                             </div>
                         </div>
                     `;
                 });
-                document.getElementById('watchList').innerHTML = wHtml || '<div class="sub">Watchlist empty</div>';
+                document.getElementById('watchList').innerHTML = wHtml || 'Watchlist empty';
 
-                // Signals
                 let sHtml = '';
-                pulse.signals.forEach(s => {
-                    sHtml += `<div class="news-item" style="padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05)">
-                        <div class="symbol" style="font-size:0.9rem">${s.symbol} <span class="sub" style="float:right">${s.trade_bias}</span></div>
-                        <div class="sub">${s.trend} (${s.confidence}%)</div>
+                market.signals.forEach(s => {
+                    sHtml += `<div class="list-item" onclick="viewOnChart('${s.symbol}')">
+                        <div><div class="symbol">${s.symbol}</div><div class="sub">${s.trend}</div></div>
+                        <div class="symbol" style="color:var(--primary)">${s.confidence}%</div>
                     </div>`;
                 });
                 document.getElementById('signalsList').innerHTML = sHtml;
-            } catch (e) { console.error(e); }
+            } catch (e) {}
         }
 
-        async function deleteItem(symbol, type) {
-            if (!confirm(`Hapus ${symbol}?`)) return;
-            await fetch('/api/tma/delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId, symbol, type })
-            });
-            if (type === 'asset') loadHome(); else loadMarket();
-        }
-
-        function showModal(mode) {
-            const m = document.getElementById('modal');
-            const fields = document.getElementById('modalFields');
-            const confirmBtn = document.getElementById('modalConfirm');
-            m.style.display = 'flex';
-            
-            if (mode === 'asset') {
-                document.getElementById('modalTitle').innerText = 'Add Holding';
-                fields.innerHTML = `
-                    <input type="text" id="mSym" placeholder="Symbol (e.g BTCUSDT)" style="margin-bottom:10px">
-                    <input type="number" id="mQty" placeholder="Amount" style="margin-bottom:10px">
-                    <input type="number" id="mPrice" placeholder="Avg Buy Price">
-                `;
-                confirmBtn.onclick = async () => {
-                    await fetch('/api/tma/assets/add', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            user_id: userId,
-                            symbol: document.getElementById('mSym').value,
-                            amount: document.getElementById('mQty').value,
-                            avg_price: document.getElementById('mPrice').value
-                        })
-                    });
-                    hideModal(); loadHome();
-                };
-            } else if (mode === 'watch') {
-                document.getElementById('modalTitle').innerText = 'Add to Watchlist';
-                fields.innerHTML = `<input type="text" id="mSym" placeholder="Symbol (e.g SOLUSDT)">`;
-                confirmBtn.onclick = async () => {
-                    // Logic for watch add via bot but we can hit an API if we add it
-                    alert('Watch via /watch command is easier for now, but API is ready!');
-                    hideModal();
-                };
-            }
-        }
-
-        function hideModal() { document.getElementById('modal').style.display = 'none'; }
-
-        async function submitAlert() {
-            const symbol = document.getElementById('alertSymbol').value;
-            const res = await fetch('/api/tma/alerts/add', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: userId,
-                    symbol,
-                    indicator: document.getElementById('alertInd').value,
-                    condition: document.getElementById('alertCond').value,
-                    threshold: 70
-                })
-            });
-            if (res.ok) { tg.showAlert('Alert Activated!'); }
+        function viewOnChart(symbol) {
+            switchTab('chart');
+            loadChart(symbol);
         }
 
         async function runScan() {
             const ca = document.getElementById('scanCa').value.trim();
             if (!ca) return;
-            const btn = document.getElementById('scanActionBtn');
-            btn.innerText = 'Analyzing...';
             const res = await fetch(`https://api.rugcheck.xyz/v1/tokens/${ca}/report`);
             const report = await res.json();
-            const resDiv = document.getElementById('scanRes');
-            resDiv.style.display = 'block';
-            resDiv.innerHTML = `<div class="card">
-                <div class="stat-label">Security Score</div>
-                <div class="stat-value" style="color:${report.score < 200 ? 'var(--success)' : 'var(--danger)'}">${report.score}</div>
-                <div class="sub">LP Burned: ${report.markets?.[0]?.lp?.lpBurned ? '✅' : '❌'}</div>
-            </div>`;
-            btn.innerText = 'Analyze Rug Risk';
+            document.getElementById('scanResult').innerHTML = `
+                <div class="card">
+                    <div class="sub">Security Score</div>
+                    <div style="font-size:1.5rem; font-weight:800; color:${report.score < 200 ? 'var(--success)' : 'var(--danger)'}">${report.score}</div>
+                    <div class="sub" style="margin-top:10px">LP Burned: ${report.markets?.[0]?.lp?.lpBurned ? '✅' : '❌'}</div>
+                </div>
+            `;
         }
 
         // Init
-        loadHome();
+        loadPorto();
     </script>
 </body>
 </html>
