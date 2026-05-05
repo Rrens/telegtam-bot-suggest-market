@@ -28,7 +28,7 @@
             display: flex; justify-content: space-around;
             padding: 10px 0 25px; border-top: 1px solid rgba(255,255,255,0.08); z-index: 1000;
         }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--hint); font-size: 0.65rem; gap: 4px; transition: 0.2s; min-width: 60px; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--hint); font-size: 0.65rem; gap: 4px; transition: 0.2s; min-width: 50px; }
         .nav-item.active { color: var(--primary); transform: translateY(-2px); }
         .nav-icon { font-size: 1.2rem; }
 
@@ -41,6 +41,10 @@
         /* Components */
         .card { background: var(--surface); border-radius: 20px; padding: 18px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
         .search-input { width: 100%; padding: 14px 20px; background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; color: white; outline: none; margin-bottom: 15px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 14px; background: var(--primary); border: none; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn:active { transform: scale(0.98); opacity: 0.9; }
+        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .symbol { font-weight: 700; font-size: 0.95rem; }
         .sub { font-size: 0.75rem; color: var(--hint); }
@@ -56,13 +60,17 @@
         .suggest-item { padding: 12px 20px; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
         h1 { font-size: 1.6rem; font-weight: 800; margin: 0 0 20px; }
+        .loading-text { text-align: center; color: var(--hint); padding: 20px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
     <!-- 1. HOME (Portfolio) -->
     <div id="view-home" class="view active">
-        <h1>Terminal</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>Terminal</h1>
+            <span onclick="loadHome()" style="cursor: pointer;">🔄</span>
+        </div>
         <div class="card" style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);">
             <div class="sub" style="color: white; opacity: 0.8;">TOTAL BALANCE</div>
             <div style="font-size: 2rem; font-weight: 800; margin: 5px 0;" id="home-balance">$0.00</div>
@@ -70,7 +78,7 @@
         </div>
         <div class="card">
             <div style="font-weight: 800; margin-bottom: 10px;">Assets</div>
-            <div id="home-assets">Loading...</div>
+            <div id="home-assets">Tap 🔄 to load assets.</div>
         </div>
     </div>
 
@@ -92,23 +100,29 @@
     <!-- 3. INTEL (Today & Movers) -->
     <div id="view-intel" class="view">
         <h1>Market Intel</h1>
-        <div class="card" id="intel-pulse">Loading sentiment...</div>
-        <div class="card">
-            <div style="font-weight: 800; margin-bottom: 10px;">Top Movers (24h)</div>
-            <div id="intel-movers">Loading movers...</div>
+        <button class="btn" onclick="loadIntel()" id="intel-btn">🔥 Scan Market Today</button>
+        <div id="intel-content" style="margin-top: 20px;">
+            <div class="card" id="intel-pulse">Sentiment data will appear here.</div>
+            <div class="card">
+                <div style="font-weight: 800; margin-bottom: 10px;">Top Movers (24h)</div>
+                <div id="intel-movers">Tap button to scan.</div>
+            </div>
         </div>
     </div>
 
     <!-- 4. SCANNER (Gems & Whale) -->
     <div id="view-scanner" class="view">
         <h1>Scanner</h1>
-        <div class="card">
-            <div style="font-weight: 800; margin-bottom: 10px;">💎 Solana Gems</div>
-            <div id="scan-gems">Loading gems...</div>
-        </div>
-        <div class="card">
-            <div style="font-weight: 800; margin-bottom: 10px;">🐋 Smart Money</div>
-            <div id="scan-whale">Loading whales...</div>
+        <button class="btn" onclick="loadScanner()" id="scan-btn">💎 Run Gem & Whale Scan</button>
+        <div id="scan-content" style="margin-top: 20px;">
+            <div class="card">
+                <div style="font-weight: 800; margin-bottom: 10px;">💎 Solana Gems</div>
+                <div id="scan-gems">Tap button to start.</div>
+            </div>
+            <div class="card">
+                <div style="font-weight: 800; margin-bottom: 10px;">🐋 Smart Money</div>
+                <div id="scan-whale">Whale activity tracking.</div>
+            </div>
         </div>
     </div>
 
@@ -116,14 +130,17 @@
     <div id="view-security" class="view">
         <h1>Security</h1>
         <input type="text" id="rug-input" class="search-input" placeholder="Paste Token CA here...">
-        <button onclick="runRugCheck()" style="width: 100%; padding: 14px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: 800; margin-bottom: 20px;">🛡️ Check Security</button>
-        <div id="rug-result"></div>
+        <button class="btn" onclick="runRugCheck()" id="rug-btn">🛡️ Run Security Check</button>
+        <div id="rug-result" style="margin-top: 20px;"></div>
     </div>
 
     <!-- 6. ALERTS -->
     <div id="view-alerts" class="view">
-        <h1>My Alerts</h1>
-        <div id="alert-list">Loading alerts...</div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>My Alerts</h1>
+            <span onclick="loadAlerts()" style="cursor: pointer;">🔄</span>
+        </div>
+        <div id="alert-list" class="loading-text">Tap 🔄 to load your alerts.</div>
     </div>
 
     <nav class="bottom-nav">
@@ -149,84 +166,110 @@
             const idx = ['home', 'charts', 'intel', 'scanner', 'security', 'alerts'].indexOf(id);
             document.querySelectorAll('.nav-item')[idx].classList.add('active');
             
-            if (id === 'home') loadHome();
+            if (id === 'home' && document.getElementById('home-assets').innerText.includes('Tap')) loadHome();
             if (id === 'charts') renderChart(curSymbol);
-            if (id === 'intel') loadIntel();
-            if (id === 'scanner') loadScanner();
-            if (id === 'alerts') loadAlerts();
+            if (id === 'alerts') loadAlerts(); // Auto-load alerts when tab is opened
         }
 
         async function loadHome() {
-            const res = await fetch(`/api/tma/portfolio?user_id=${userId}`);
-            const data = await res.json();
-            document.getElementById('home-balance').innerText = `$${data.totalValue.toLocaleString()}`;
-            document.getElementById('home-pnl').innerText = `${data.pnl>=0?'+':''}$${data.pnl.toLocaleString()} Today`;
-            let html = '';
-            data.assets.forEach(a => {
-                html += `<div class="list-item" onclick="tab('charts'); loadChart('${a.currency==='Rp'?'IDX':'BINANCE'}', '${a.symbol}')">
-                    <div><div class="symbol">${a.symbol}</div><div class="sub">${a.amount} Units</div></div>
-                    <div style="text-align:right"><div class="symbol">${a.currency}${a.currentValue.toLocaleString()}</div><div class="${a.pnl>=0?'pos':'neg'}">${a.pnl>=0?'+':''}${a.pnl.toLocaleString()}</div></div>
-                </div>`;
-            });
-            document.getElementById('home-assets').innerHTML = html || 'No assets.';
+            document.getElementById('home-assets').innerHTML = '<div class="loading-text">Loading portfolio...</div>';
+            try {
+                const res = await fetch(`/api/tma/portfolio?user_id=${userId}`);
+                const data = await res.json();
+                document.getElementById('home-balance').innerText = `$${data.totalValue.toLocaleString(undefined, {maximumFractionDigits:2})}`;
+                document.getElementById('home-pnl').innerText = `${data.pnl>=0?'+':''}$${data.pnl.toLocaleString(undefined, {maximumFractionDigits:2})} Today`;
+                let html = '';
+                if (data.assets.length === 0) html = '<div class="loading-text">No assets found.</div>';
+                data.assets.forEach(a => {
+                    html += `<div class="list-item" onclick="tab('charts'); loadChart('${a.currency==='Rp'?'IDX':'BINANCE'}', '${a.symbol}')">
+                        <div><div class="symbol">${a.symbol}</div><div class="sub">${a.amount} Units</div></div>
+                        <div style="text-align:right"><div class="symbol">${a.currency}${a.currentValue.toLocaleString()}</div><div class="${a.pnl>=0?'pos':'neg'}">${a.pnl>=0?'+':''}${a.pnl.toLocaleString()}</div></div>
+                    </div>`;
+                });
+                document.getElementById('home-assets').innerHTML = html;
+            } catch (e) { document.getElementById('home-assets').innerHTML = 'Failed to load portfolio.'; }
         }
 
         async function loadIntel() {
-            const [pRes, tRes] = await Promise.all([fetch('/api/tma/market-pulse'), fetch('/api/tma/today')]);
-            const pData = await pRes.json();
-            const tData = await tRes.json();
-            const fg = pData.fearGreed || { value: '??', classification: 'N/A' };
-            document.getElementById('intel-pulse').innerHTML = `
-                <div style="font-size: 1rem; font-weight: 800; margin-bottom: 10px;">Fear & Greed Index</div>
-                <div class="list-item"><div class="symbol">State</div><div class="symbol" style="color:var(--primary)">${fg.value} (${fg.classification})</div></div>
-            `;
-            let mHtml = '';
-            tData.forEach(m => {
-                mHtml += `<div class="list-item">
-                    <div class="symbol">${m.symbol}</div>
-                    <div style="text-align:right"><div class="symbol">$${m.price.toLocaleString()}</div><div class="${m.change>=0?'pos':'neg'}">${m.change.toFixed(2)}%</div></div>
-                </div>`;
-            });
-            document.getElementById('intel-movers').innerHTML = mHtml || 'No data.';
+            const btn = document.getElementById('intel-btn');
+            btn.innerText = 'Scanning Market...';
+            btn.disabled = true;
+            try {
+                const [pRes, tRes] = await Promise.all([fetch('/api/tma/market-pulse'), fetch('/api/tma/today')]);
+                const pData = await pRes.json();
+                const tData = await tRes.json();
+                const fg = pData.fearGreed || { value: '??', classification: 'N/A' };
+                document.getElementById('intel-pulse').innerHTML = `
+                    <div style="font-weight:800; margin-bottom:10px;">Market Sentiment</div>
+                    <div class="list-item"><span>Fear & Greed Index</span><span style="color:var(--primary); font-weight:800;">${fg.value} (${fg.classification})</span></div>
+                `;
+                let mHtml = '';
+                if (tData.gainers) {
+                    tData.gainers.slice(0, 10).forEach(m => {
+                        mHtml += `<div class="list-item" onclick="tab('charts'); loadChart('BINANCE', '${m.symbol}')">
+                            <div class="symbol">${m.symbol}</div>
+                            <div style="text-align:right"><div class="symbol">$${m.price.toLocaleString()}</div><div class="${m.change>=0?'pos':'neg'}">${m.change.toFixed(2)}%</div></div>
+                        </div>`;
+                    });
+                }
+                document.getElementById('intel-movers').innerHTML = mHtml || 'No movers data.';
+            } catch (e) { document.getElementById('intel-movers').innerHTML = 'Scan failed.'; }
+            btn.innerText = '🔥 Scan Market Today';
+            btn.disabled = false;
         }
 
         async function loadScanner() {
-            const res = await fetch('/api/tma/gems');
-            const data = await res.json();
-            let gHtml = '';
-            data.gems.forEach(g => {
-                gHtml += `<div class="list-item"><div><div class="symbol">${g.symbol}</div><div class="sub">${g.name}</div></div><div class="badge">💎 Graduated</div></div>`;
-            });
-            document.getElementById('scan-gems').innerHTML = gHtml || 'No gems.';
-            let wHtml = '';
-            data.whale.forEach(w => {
-                wHtml += `<div class="list-item"><div><div class="symbol">${w.symbol}</div><div class="sub">${w.type}</div></div><div class="pos">$${w.amount.toLocaleString()}</div></div>`;
-            });
-            document.getElementById('scan-whale').innerHTML = wHtml || 'No whale activity.';
+            const btn = document.getElementById('scan-btn');
+            btn.innerText = 'Hunting Gems...';
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/tma/gems');
+                const data = await res.json();
+                let gHtml = '';
+                if (data.gems) data.gems.forEach(g => {
+                    gHtml += `<div class="list-item"><div><div class="symbol">${g.symbol}</div><div class="sub">${g.name}</div></div><div class="badge">💎 Graduated</div></div>`;
+                });
+                document.getElementById('scan-gems').innerHTML = gHtml || 'No gems found currently.';
+                let wHtml = '';
+                if (data.whale) data.whale.forEach(w => {
+                    wHtml += `<div class="list-item"><div><div class="symbol">${w.symbol}</div><div class="sub">${w.type.toUpperCase()}</div></div><div class="pos">$${w.usdAmount.toLocaleString()}</div></div>`;
+                });
+                document.getElementById('scan-whale').innerHTML = wHtml || 'No recent whale activity.';
+            } catch (e) { document.getElementById('scan-gems').innerHTML = 'Scan failed.'; }
+            btn.innerText = '💎 Run Gem & Whale Scan';
+            btn.disabled = false;
         }
 
         async function runRugCheck() {
             const ca = document.getElementById('rug-input').value;
             if (!ca) return;
-            document.getElementById('rug-result').innerHTML = 'Checking...';
-            const res = await fetch(`/api/tma/rugcheck?ca=${ca}`);
-            const data = await res.json();
-            document.getElementById('rug-result').innerHTML = `
-                <div class="card" style="border-left: 4px solid ${data.score < 50 ? 'var(--success)' : 'var(--danger)'}">
-                    <div style="font-weight:800; margin-bottom:10px;">Risk Score: ${data.score}/100</div>
-                    <div class="sub">${data.summary || 'Simulation: No major issues found.'}</div>
-                </div>
-            `;
+            const btn = document.getElementById('rug-btn');
+            btn.innerText = 'Checking...'; btn.disabled = true;
+            try {
+                const res = await fetch(`/api/tma/rugcheck?ca=${ca}`);
+                const data = await res.json();
+                document.getElementById('rug-result').innerHTML = `
+                    <div class="card" style="border-left: 4px solid ${data.score < 50 ? 'var(--success)' : 'var(--danger)'}">
+                        <div style="font-weight:800; margin-bottom:10px;">${data.name} Risk Score: ${data.score}/100</div>
+                        <div class="sub">Level: <b>${data.riskLevel}</b> | Holders: ${data.topHoldersPct}%</div>
+                    </div>
+                `;
+            } catch (e) { document.getElementById('rug-result').innerHTML = 'Check failed.'; }
+            btn.innerText = '🛡️ Run Security Check'; btn.disabled = false;
         }
 
         async function loadAlerts() {
-            const res = await fetch(`/api/tma/alerts?user_id=${userId}`);
-            const data = await res.json();
-            let html = '';
-            data.forEach(a => {
-                html += `<div class="card"><div class="list-item"><div><div class="symbol">${a.symbol}</div><div class="sub">${a.indicator} ${a.condition} ${a.threshold}</div></div><button onclick="deleteAlert(${a.id})" style="background:var(--danger); border:none; color:white; padding:4px 8px; border-radius:4px; font-size:0.7rem;">Delete</button></div></div>`;
-            });
-            document.getElementById('alert-list').innerHTML = html || 'No alerts set.';
+            document.getElementById('alert-list').innerHTML = '<div class="loading-text">Loading alerts...</div>';
+            try {
+                const res = await fetch(`/api/tma/alerts?user_id=${userId}`);
+                const data = await res.json();
+                let html = '';
+                if (data.length === 0) html = '<div class="loading-text">No active alerts.</div>';
+                data.forEach(a => {
+                    html += `<div class="card" style="padding:15px;"><div class="list-item" style="padding:0; border:none;"><div><div class="symbol">${a.symbol}</div><div class="sub">${a.indicator} ${a.condition} ${a.threshold}</div></div><button onclick="deleteAlert(${a.id})" style="background:var(--danger); border:none; color:white; padding:6px 12px; border-radius:8px; font-size:0.7rem; font-weight:800;">Delete</button></div></div>`;
+                });
+                document.getElementById('alert-list').innerHTML = html;
+            } catch (e) { document.getElementById('alert-list').innerHTML = 'Failed to load alerts.'; }
         }
 
         async function deleteAlert(id) {
@@ -260,6 +303,7 @@
             new TradingView.widget({ "autosize": true, "symbol": symbol, "interval": curTF, "timezone": "Asia/Jakarta", "theme": "dark", "style": "1", "locale": "en", "container_id": "chart-container" });
         }
 
+        // Init load
         loadHome();
     </script>
 </body>
