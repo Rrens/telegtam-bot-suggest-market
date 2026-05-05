@@ -85,13 +85,25 @@ export async function handleMenuCallbacks(ctx: Context): Promise<void> {
     await ctx.answerCallbackQuery();
     
     // Memberikan instruksi cara pakai jika command butuh input
-    if (cmd === 'help') return handleHelp(ctx);
-    if (cmd === 'check') return ctx.reply('🛡️ Ketik <code>/check &lt;alamat_kontrak&gt;</code> buat scan koin Solana.', { parse_mode: 'HTML' });
-    if (cmd === 'watch_help') return ctx.reply('👁 Ketik <code>/watch &lt;symbol&gt;</code> buat nambahin ke watchlist.', { parse_mode: 'HTML' });
-    if (cmd === 'today') return ctx.reply('/today'); // Bisa di-trigger langsung kalau bot support
+    if (cmd === 'help') {
+      await handleHelp(ctx);
+      return;
+    }
+    if (cmd === 'check') {
+      await ctx.reply('🛡️ Ketik <code>/check &lt;alamat_kontrak&gt;</code> buat scan koin Solana.', { parse_mode: 'HTML' });
+      return;
+    }
+    if (cmd === 'watch_help') {
+      await ctx.reply('👁 Ketik <code>/watch &lt;symbol&gt;</code> buat nambahin ke watchlist.', { parse_mode: 'HTML' });
+      return;
+    }
+    if (cmd === 'today') {
+      await ctx.reply('/today');
+      return;
+    }
     
-    // Untuk command simple, kita kasih tau command-nya apa
-    return ctx.reply(`Gunakan command: <code>/${cmd}</code>`, { parse_mode: 'HTML' });
+    await ctx.reply(`Gunakan command: <code>/${cmd}</code>`, { parse_mode: 'HTML' });
+    return;
   }
 
   await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: keyboard });

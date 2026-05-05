@@ -220,7 +220,7 @@ export function startWebServer() {
       res.json({
         fearGreed,
         signals: recentSignals,
-        news: news.map(n => ({
+        news: news.map((n: any) => ({
           title: n.title,
           source: n.source,
           url: n.url,
