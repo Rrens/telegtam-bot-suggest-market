@@ -27,6 +27,7 @@ import { handleFlush } from './commands/flush';
 import { handleApp } from './commands/app';
 import { handleAdmin, handleBroadcast } from './commands/admin';
 import { handlePaperStatus, handlePaperBuy, handlePaperSell } from './commands/paper';
+import { handleSolana } from './commands/solana';
 import { activityLogger } from './middleware/activityLogger';
 import { log } from '../utils/logger';
 
@@ -62,6 +63,7 @@ export function createBot(): Bot {
   bot.command('paper', handlePaperStatus);
   bot.command('paperbuy', handlePaperBuy);
   bot.command('papersell', handlePaperSell);
+  bot.command('solana', handleSolana);
 
   // ── Channel Support ─────────────────────────────────────────────────────────
   // Allows commands like /info or /kurs to work when posted in a channel
@@ -107,6 +109,7 @@ export function createBot(): Bot {
     { command: 'paper', description: 'View paper trading portfolio' },
     { command: 'paperbuy', description: 'Buy asset in paper trading' },
     { command: 'papersell', description: 'Sell asset in paper trading' },
+    { command: 'solana', description: '🚀 Scan Solana for hidden gem meme coins' },
   ]).catch((err) => log.warn('Failed to set bot commands', { error: err.message }));
 
   return bot;
