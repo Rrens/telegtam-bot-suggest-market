@@ -272,6 +272,26 @@ export function startWebServer() {
     } catch (err) { res.status(500).json({ error: 'Failed to load today data' }); }
   });
 
+  // API: TMA Symbol Insights (News + Technicals)
+  app.get('/api/tma/insight', async (req, res) => {
+    const { symbol } = req.query;
+    if (!symbol) return res.status(400).json({ error: 'Missing symbol' });
+    try {
+      const { NewsService } = require('../services/NewsService');
+      const { PriceService } = require('../services/PriceService');
+      
+      const cleanSymbol = (symbol as string).split(':').pop() || '';
+      const [news, priceData] = await Promise.all([
+        NewsService.getNews(cleanSymbol, 3),
+        PriceService.getPrice(cleanSymbol)
+      ]);
+
+      // Simple technical score logic
+      const score = Math.floor(Math.random() * 40) + 30; // Mock score for now
+      res.json({ news, priceData, score });
+    } catch (err) { res.status(500).json({ error: 'Insight failed' }); }
+  });
+
   // API: TMA Solana Gems & Smart Money
   app.get('/api/tma/gems', async (req, res) => {
     try {

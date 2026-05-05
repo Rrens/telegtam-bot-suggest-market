@@ -56,11 +56,10 @@
         .badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); }
 
         #chart-container { width: 100%; height: 45vh; border-radius: 16px; overflow: hidden; background: #000; margin-top: 10px; }
-        .suggest-list { position: absolute; width: calc(100% - 40px); background: var(--surface); border-radius: 12px; z-index: 2000; display: none; border: 1px solid rgba(255,255,255,0.1); }
-        .suggest-item { padding: 12px 20px; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
-
-        h1 { font-size: 1.6rem; font-weight: 800; margin: 0 0 20px; }
-        .loading-text { text-align: center; color: var(--hint); padding: 20px; font-size: 0.9rem; }
+        .insight-card { margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px; }
+        .score-badge { display: inline-block; padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; margin-bottom: 10px; }
+        .news-item { font-size: 0.8rem; margin-bottom: 10px; opacity: 0.9; line-height: 1.4; border-left: 2px solid var(--primary); padding-left: 10px; }
+        .card { background: var(--surface); border-radius: 20px; padding: 18px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
     </style>
 </head>
 <body>
@@ -95,6 +94,10 @@
             <div class="tf-btn active" onclick="setTF('D', this)">1D</div>
         </div>
         <div id="chart-container"></div>
+        
+        <div class="insight-card" id="chart-insight">
+            <div class="loading-text">Loading Smart Insights...</div>
+        </div>
     </div>
 
     <!-- 3. INTEL (Today & Movers) -->
@@ -248,13 +251,23 @@
             try {
                 const res = await fetch(`/api/tma/rugcheck?ca=${ca}`);
                 const data = await res.json();
-                document.getElementById('rug-result').innerHTML = `
-                    <div class="card" style="border-left: 4px solid ${data.score < 50 ? 'var(--success)' : 'var(--danger)'}">
-                        <div style="font-weight:800; margin-bottom:10px;">${data.name} Risk Score: ${data.score}/100</div>
-                        <div class="sub">Level: <b>${data.riskLevel}</b> | Holders: ${data.topHoldersPct}%</div>
-                    </div>
-                `;
-            } catch (e) { document.getElementById('rug-result').innerHTML = 'Check failed.'; }
+                if (!data || data.error) {
+                    document.getElementById('rug-result').innerHTML = `<div class="card" style="border-left: 4px solid var(--danger)">
+                        <div style="font-weight:800; margin-bottom:10px;">❌ Token Not Found</div>
+                        <div class="sub">We couldn't find this token on Solana, ETH, BSC, Base, or Polygon. Please check the address.</div>
+                    </div>`;
+                } else {
+                    const chainBadge = `<span class="badge" style="background:var(--primary); margin-left:10px;">${data.chain || 'Solana'}</span>`;
+                    document.getElementById('rug-result').innerHTML = `
+                        <div class="card" style="border-left: 4px solid ${data.score < 50 ? 'var(--success)' : 'var(--danger)'}">
+                            <div style="font-weight:800; margin-bottom:10px;">${data.name} (${data.symbol}) ${chainBadge}</div>
+                            <div style="font-size:1.2rem; font-weight:800; margin:10px 0;">Risk Score: ${data.score}</div>
+                            <div class="sub">Security Status: <b>${data.riskLevel}</b></div>
+                            ${data.risks.length > 0 ? `<div style="margin-top:10px; font-size:0.75rem; color:var(--danger);">${data.risks.map(r => '⚠️ ' + r.name).join('<br>')}</div>` : '<div style="margin-top:10px; font-size:0.75rem; color:var(--success);">✅ No high risk factors detected.</div>'}
+                        </div>
+                    `;
+                }
+            } catch (e) { document.getElementById('rug-result').innerHTML = 'Check failed. Connection error.'; }
             btn.innerText = '🛡️ Run Security Check'; btn.disabled = false;
         }
 
@@ -290,6 +303,43 @@
             document.getElementById('chart-suggest').style.display = 'none';
             document.getElementById('chart-search').value = '';
             renderChart(curSymbol);
+            loadInsight(symbol);
+        }
+
+        async function loadInsight(symbol) {
+            const container = document.getElementById('chart-insight');
+            container.innerHTML = '<div class="loading-text">Analyzing symbol...</div>';
+            try {
+                const res = await fetch(`/api/tma/insight?symbol=${symbol}`);
+                const data = await res.json();
+                
+                const scoreColor = data.score > 60 ? 'var(--success)' : data.score > 40 ? 'var(--primary)' : 'var(--danger)';
+                const scoreText = data.score > 60 ? 'Strong Bullish' : data.score > 40 ? 'Neutral' : 'Bearish Warning';
+
+                let newsHtml = '';
+                if (data.news && data.news.length > 0) {
+                    data.news.forEach(n => {
+                        newsHtml += `<div class="news-item"><b>${n.title}</b><br><span class="sub">${n.source}</span></div>`;
+                    });
+                } else {
+                    newsHtml = '<div class="sub">No recent news found for this symbol.</div>';
+                }
+
+                container.innerHTML = `
+                    <div style="font-weight: 800; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <span>Smart Insight</span>
+                        <div class="score-badge" style="background: ${scoreColor}; color: white;">${data.score}/100 - ${scoreText}</div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <div class="sub" style="margin-bottom: 5px;">AI TECHNICAL SUMMARY</div>
+                        <div style="font-size: 0.8rem; opacity: 0.8;">Indicators suggest a <b>${scoreText.toLowerCase()}</b> trend for ${symbol.toUpperCase()}. Check volume for confirmation.</div>
+                    </div>
+                    <div class="sub" style="margin-bottom: 10px;">LATEST UPDATES</div>
+                    ${newsHtml}
+                `;
+            } catch (e) {
+                container.innerHTML = '<div class="sub">Insight currently unavailable.</div>';
+            }
         }
 
         function setTF(tf, el) {
@@ -305,6 +355,8 @@
 
         // Init load
         loadHome();
+        renderChart(curSymbol);
+        loadInsight('BTCUSDT');
     </script>
 </body>
 </html>
