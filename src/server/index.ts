@@ -298,9 +298,14 @@ export function startWebServer() {
     const { user_id } = req.query;
     if (!user_id) return res.status(400).json({ error: 'Missing user_id' });
     try {
-      const alerts = await db('technical_alerts').where({ user_id });
+      const alerts = await db('technical_alerts').where({ user_id }).catch(e => {
+        log.warn('Database not ready for Alerts:', { error: e.message });
+        return []; // Return empty if DB fails
+      });
       res.json(alerts);
-    } catch (err) { res.status(500).json({ error: 'Failed to load alerts' }); }
+    } catch (err) { 
+      res.json([]); 
+    }
   });
 
   app.post('/api/tma/alerts/delete', async (req, res) => {
