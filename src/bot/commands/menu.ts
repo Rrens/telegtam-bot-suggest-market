@@ -53,7 +53,8 @@ export async function handleMenuCallbacks(ctx: Context): Promise<void> {
       .text('💎 Solana Gems', 'cmd_solana')
       .text('🐋 Smart Money', 'cmd_smartmoney').row()
       .text('⬅️ Back', 'back_to_menu');
-    return ctx.editMessageText(`🚀 <b>Market Intelligence</b>\nKlik fitur untuk eksekusi langsung:`, { parse_mode: 'HTML', reply_markup: kb });
+    await ctx.editMessageText(`🚀 <b>Market Intelligence</b>\nKlik fitur untuk eksekusi langsung:`, { parse_mode: 'HTML', reply_markup: kb });
+    return;
   }
   
   if (data === 'cat_security') {
@@ -61,34 +62,38 @@ export async function handleMenuCallbacks(ctx: Context): Promise<void> {
       .text('🛡️ RugCheck CA', 'cmd_check_prompt')
       .text('👁 My Watchlist', 'cmd_watchlist').row()
       .text('⬅️ Back', 'back_to_menu');
-    return ctx.editMessageText(`🛡️ <b>Security & Watchlist</b>`, { parse_mode: 'HTML', reply_markup: kb });
+    await ctx.editMessageText(`🛡️ <b>Security & Watchlist</b>`, { parse_mode: 'HTML', reply_markup: kb });
+    return;
   }
 
   if (data === 'cat_alerts') {
     const kb = new InlineKeyboard()
       .text('📊 RSI/MA Alert Setup', 'cmd_alertrsi')
       .text('⬅️ Back', 'back_to_menu');
-    return ctx.editMessageText(`📊 <b>Technical Alerts</b>`, { parse_mode: 'HTML', reply_markup: kb });
+    await ctx.editMessageText(`📊 <b>Technical Alerts</b>`, { parse_mode: 'HTML', reply_markup: kb });
+    return;
   }
 
   // 2. Direct Executions (NO Command Needed)
-  if (data === 'cmd_today') { await ctx.answerCallbackQuery(); return handleToday(ctx as any); }
-  if (data === 'cmd_sentiment') { await ctx.answerCallbackQuery(); return handleSentiment(ctx as any); }
-  if (data === 'cmd_solana') { await ctx.answerCallbackQuery(); return handleSolana(ctx as any); }
-  if (data === 'cmd_smartmoney') { await ctx.answerCallbackQuery(); return handleSmartMoney(ctx as any); }
-  if (data === 'cmd_watchlist') { await ctx.answerCallbackQuery(); return handleWatchlist(ctx as any); }
-  if (data === 'cmd_alertrsi') { await ctx.answerCallbackQuery(); return handleAlertRsi(ctx as any); }
-  if (data === 'cmd_app') { await ctx.answerCallbackQuery(); return handleApp(ctx as any); }
-  if (data === 'cmd_help') { await ctx.answerCallbackQuery(); return handleHelp(ctx as any); }
+  if (data === 'cmd_today') { await ctx.answerCallbackQuery(); await handleToday(ctx as any); return; }
+  if (data === 'cmd_sentiment') { await ctx.answerCallbackQuery(); await handleSentiment(ctx as any); return; }
+  if (data === 'cmd_solana') { await ctx.answerCallbackQuery(); await handleSolana(ctx as any); return; }
+  if (data === 'cmd_smartmoney') { await ctx.answerCallbackQuery(); await handleSmartMoney(ctx as any); return; }
+  if (data === 'cmd_watchlist') { await ctx.answerCallbackQuery(); await handleWatchlist(ctx as any); return; }
+  if (data === 'cmd_alertrsi') { await ctx.answerCallbackQuery(); await handleAlertRsi(ctx as any); return; }
+  if (data === 'cmd_app') { await ctx.answerCallbackQuery(); await handleApp(ctx as any); return; }
+  if (data === 'cmd_help') { await ctx.answerCallbackQuery(); await handleHelp(ctx as any); return; }
   
   // Specific Prompts
   if (data === 'cmd_check_prompt') {
     await ctx.answerCallbackQuery();
-    return ctx.reply('🛡️ Silakan kirim alamat kontrak (CA) Solana yang mau di-scan:\nContoh: <code>/check [CA]</code>', { parse_mode: 'HTML' });
+    await ctx.reply('🛡️ Silakan kirim alamat kontrak (CA) Solana yang mau di-scan:\nContoh: <code>/check [CA]</code>', { parse_mode: 'HTML' });
+    return;
   }
 
   if (data === 'back_to_menu') {
     await ctx.answerCallbackQuery();
-    return handleMenu(ctx);
+    await handleMenu(ctx);
+    return;
   }
 }
