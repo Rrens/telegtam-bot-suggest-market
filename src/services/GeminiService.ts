@@ -126,6 +126,8 @@ export class GeminiService {
     } catch (err) {
       throw new Error(`AI Prediction failed: ${(err as Error).message}`);
     }
+  }
+
   /**
    * Deep analysis for Solana meme coins / gems.
    */

@@ -13,6 +13,7 @@ import { Bot } from 'grammy';
 
 import { jobOrchestrator } from '../services/JobOrchestrator';
 import { GeminiService } from '../services/GeminiService';
+import { config } from '../config';
 
 const QUEUE_NAME = 'solana-screener';
 const INTERVAL_MS = 15 * 60 * 1000; // Every 15 minutes

@@ -208,7 +208,7 @@ export class SolanaScreenerService {
     const symbol = escape(token.symbol);
     const rugStatus = escape(token.rugCheckStatus || 'Unknown ❓');
 
-    return [
+    const message = [
       `${urgencyEmoji} <b>SOLANA GEM ALERT</b> ${urgencyEmoji}`,
       ``,
       `<b>${name} (${symbol})</b>`,

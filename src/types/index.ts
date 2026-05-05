@@ -2,7 +2,7 @@
 // Shared TypeScript types for the entire application
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type AssetType = 'crypto' | 'stock' | 'forex';
+export type AssetType = 'crypto' | 'stock' | 'forex' | 'crypto_dex';
 export type RiskProfile = 'conservative' | 'moderate' | 'aggressive';
 export type PreferredTimeframe = 'scalping' | 'swing' | 'long-term';
 export type AlertType = 'price_target' | 'pct_change' | 'portfolio_threshold';
