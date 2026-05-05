@@ -28,8 +28,11 @@ export async function handleMenu(ctx: Context): Promise<void> {
     : `📱 <b>Main Dashboard</b>\nPilih fitur yang mau lo eksekusi:`;
 
   // Persistent Reply Keyboard (Tampil di atas input field)
+  // Sekarang pake .webApp biar pas di-klik langsung buka aplikasi
+  const tmaUrl = config.app.appUrl || `${process.env.BASE_URL || 'http://localhost:3000'}/tma`;
+
   const persistentKb = new Keyboard()
-    .text('🚀 Launch Mini App')
+    .webApp('🚀 Launch Mini App', tmaUrl)
     .text('📜 Main Menu')
     .resized()
     .persistent();

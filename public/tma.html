@@ -56,44 +56,6 @@
         .view.active { display: block; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Header Aset */
-        .asset-header {
-            display: flex; justify-content: space-between; align-items: flex-end;
-            margin-bottom: 15px; padding: 0 4px;
-        }
-        .asset-title { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
-        .asset-price { font-size: 1.1rem; font-weight: 600; color: var(--primary); }
-
-        /* Quick Pills */
-        .quick-pills {
-            display: flex; gap: 10px; overflow-x: auto;
-            margin-bottom: 18px; padding-bottom: 5px;
-            scrollbar-width: none;
-        }
-        .quick-pills::-webkit-scrollbar { display: none; }
-        .pill {
-            background: var(--surface);
-            padding: 8px 16px; border-radius: 100px;
-            font-size: 0.75rem; font-weight: 700;
-            border: 1px solid rgba(255,255,255,0.05);
-            white-space: nowrap; transition: 0.2s;
-            cursor: pointer; display: flex; align-items: center; gap: 6px;
-        }
-        .pill.active { background: var(--primary); color: white; border-color: var(--primary); }
-
-        /* Timeframe */
-        .tf-bar {
-            display: flex; background: var(--surface);
-            padding: 4px; border-radius: 12px;
-            margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05);
-        }
-        .tf-btn {
-            flex: 1; padding: 8px 0; text-align: center;
-            font-size: 0.7rem; font-weight: 700; color: var(--hint);
-            border-radius: 8px; transition: 0.2s;
-        }
-        .tf-btn.active { background: var(--bg); color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-
         /* Search & Suggester */
         .search-container { position: relative; margin-bottom: 15px; }
         .search-input {
@@ -106,184 +68,149 @@
             position: absolute; top: 100%; left: 0; right: 0;
             background: var(--surface); border-radius: 12px;
             margin-top: 8px; border: 1px solid rgba(255,255,255,0.1);
-            z-index: 2000; max-height: 200px; overflow-y: auto;
-            display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 2000; max-height: 400px; overflow-y: auto;
+            display: none; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        }
+        .suggest-header {
+            padding: 10px 20px; font-size: 0.65rem; font-weight: 800;
+            color: var(--hint); text-transform: uppercase; letter-spacing: 1px;
+            background: rgba(255,255,255,0.03);
         }
         .suggest-item {
             padding: 12px 20px; font-size: 0.85rem; font-weight: 600;
             border-bottom: 1px solid rgba(255,255,255,0.05);
-            display: flex; justify-content: space-between;
+            display: flex; justify-content: space-between; align-items: center;
         }
         .suggest-item:active { background: var(--primary); }
+        .broker-tag { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); color: var(--hint); }
+
+        /* Asset Info */
+        .asset-header {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            margin-bottom: 15px; padding: 0 4px;
+        }
+        .asset-title { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
+        .asset-price { font-size: 1.1rem; font-weight: 600; color: var(--primary); }
 
         #chart-container {
-            width: 100%; height: 50vh;
+            width: 100%; height: 55vh;
             border-radius: 20px; overflow: hidden;
             background: #000; border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .card {
-            background: var(--surface); border-radius: 24px; padding: 20px;
-            margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05);
+        .quick-pills {
+            display: flex; gap: 10px; overflow-x: auto;
+            margin-bottom: 18px; padding-bottom: 5px;
+            scrollbar-width: none;
         }
+        .pill {
+            background: var(--surface); padding: 8px 16px; border-radius: 100px;
+            font-size: 0.75rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.05);
+            white-space: nowrap; cursor: pointer;
+        }
+        .pill.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        .list-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .list-item:last-child { border-bottom: none; }
-        .symbol { font-weight: 700; font-size: 1rem; }
-        .sub { font-size: 0.75rem; color: var(--hint); }
-        .pos { color: var(--success); }
-        .neg { color: var(--danger); }
+        .card { background: var(--surface); border-radius: 24px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05); }
     </style>
 </head>
 <body>
 
-    <!-- HOME -->
-    <div id="view-porto" class="view active">
-        <h1 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 25px;">Terminal</h1>
-        <div class="card" style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);">
-            <div style="font-size: 0.75rem; font-weight: 700; opacity: 0.8; text-transform: uppercase;">Estimated Balance</div>
-            <div style="font-size: 2.2rem; font-weight: 800; margin: 8px 0;" id="totalBalance">$0.00</div>
-            <div id="totalPnl" style="font-weight: 700; font-size: 0.9rem;">+0.00% Today</div>
-        </div>
-        <div class="card">
-            <div style="font-size: 1rem; font-weight: 800; margin-bottom: 15px;">Your Assets</div>
-            <div id="portoList">Loading assets...</div>
-        </div>
-    </div>
-
     <!-- CHARTS -->
-    <div id="view-chart" class="view">
+    <div id="view-chart" class="view active">
         <div class="search-container">
-            <input type="text" id="symbolSearch" class="search-input" placeholder="Search Symbols..." oninput="handleSearch(this.value)">
+            <input type="text" id="symbolSearch" class="search-input" placeholder="Ketik Kode Aset (e.g. BBCA, PEPE...)" oninput="handleSearch(this.value)">
             <div id="suggestList" class="suggest-list"></div>
         </div>
 
         <div class="quick-pills">
-            <div class="pill active" onclick="quickLoad('BTCUSDT', this)">₿ BTC</div>
-            <div class="pill" onclick="quickLoad('ETHUSDT', this)">💎 ETH</div>
-            <div class="pill" onclick="quickLoad('SOLUSDT', this)">☀️ SOL</div>
-            <div class="pill" onclick="quickLoad('BNBUSDT', this)">🔶 BNB</div>
-            <div class="pill" onclick="quickLoad('XAUUSD', this)">✨ Gold</div>
+            <div class="pill active" onclick="loadWithBroker('BINANCE', 'BTCUSDT')">₿ BTC</div>
+            <div class="pill" onclick="loadWithBroker('IDX', 'BBCA')">🏦 BBCA</div>
+            <div class="pill" onclick="loadWithBroker('BINANCE', 'SOLUSDT')">☀️ SOL</div>
+            <div class="pill" onclick="loadWithBroker('OANDA', 'XAUUSD')">✨ Gold</div>
+            <div class="pill" onclick="loadWithBroker('NYSE', 'AAPL')">🍎 Apple</div>
         </div>
 
         <div class="asset-header">
             <div>
                 <div class="asset-title" id="displaySymbol">BTCUSDT</div>
-                <div class="sub">Binance Global</div>
+                <div class="sub" id="exchangeSource">BINANCE Real-time</div>
             </div>
             <div class="asset-price" id="displayPrice">Live</div>
-        </div>
-
-        <div class="tf-bar">
-            <div class="tf-btn" onclick="changeTF('1', this)">1m</div>
-            <div class="tf-btn" onclick="changeTF('5', this)">5m</div>
-            <div class="tf-btn active" onclick="changeTF('15', this)">15m</div>
-            <div class="tf-btn" onclick="changeTF('60', this)">1h</div>
-            <div class="tf-btn" onclick="changeTF('D', this)">1D</div>
         </div>
 
         <div id="chart-container"></div>
     </div>
 
-    <!-- MARKET -->
-    <div id="view-market" class="view">
-        <h1 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 25px;">Market</h1>
-        <div class="card">
-            <div style="font-size: 1rem; font-weight: 800; margin-bottom: 15px;">Market Pulse</div>
-            <div id="marketPulse">Loading market data...</div>
-        </div>
-        <div class="card">
-            <div style="font-size: 1rem; font-weight: 800; margin-bottom: 15px;">Watchlist</div>
-            <div id="watchList">Loading watchlist...</div>
-        </div>
-    </div>
+    <!-- HOME/PORTO & MARKET (Simplified for demo) -->
+    <div id="view-porto" class="view"><h1>Portfolio</h1><div class="card" id="portoList">Loading...</div></div>
+    <div id="view-market" class="view"><h1>Market</h1><div class="card" id="watchList">Loading...</div></div>
 
-    <!-- BOTTOM NAV -->
     <nav class="bottom-nav">
-        <div class="nav-item active" onclick="switchTab('porto')">
-            <span class="nav-icon">📊</span><span>Home</span>
-        </div>
-        <div class="nav-item" onclick="switchTab('chart')">
-            <span class="nav-icon">📈</span><span>Charts</span>
-        </div>
-        <div class="nav-item" onclick="switchTab('market')">
-            <span class="nav-icon">🔥</span><span>Market</span>
-        </div>
+        <div class="nav-item" onclick="switchTab('porto')"><span class="nav-icon">📊</span><span>Home</span></div>
+        <div class="nav-item active" onclick="switchTab('chart')"><span class="nav-icon">📈</span><span>Charts</span></div>
+        <div class="nav-item" onclick="switchTab('market')"><span class="nav-icon">🔥</span><span>Market</span></div>
     </nav>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.ready();
+        tg.expand(); tg.ready();
 
-        const userId = tg.initDataUnsafe?.user?.id || 653776943; // Pake ID user aslimu biar muncul datanya
         let currentSymbol = 'BINANCE:BTCUSDT';
-        let currentTF = '15';
-
-        const COMMON_SYMBOLS = [
-            { s: 'BTCUSDT', n: 'Bitcoin' }, { s: 'ETHUSDT', n: 'Ethereum' }, 
-            { s: 'SOLUSDT', n: 'Solana' }, { s: 'BNBUSDT', n: 'BNB' }, 
-            { s: 'ADAUSDT', n: 'Cardano' }, { s: 'XRPUSDT', n: 'Ripple' },
-            { s: 'DOTUSDT', n: 'Polkadot' }, { s: 'DOGEUSDT', n: 'Dogecoin' }
-        ];
-
-        function switchTab(tabId) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
-            document.getElementById(`view-${tabId}`).classList.add('active');
-            
-            const idx = ['porto', 'chart', 'market'].indexOf(tabId);
-            document.querySelectorAll('.nav-item')[idx].classList.add('active');
-
-            if (tabId === 'chart') loadChart();
-            if (tabId === 'porto') loadPorto();
-            if (tabId === 'market') loadMarket();
-        }
-
+        
         function handleSearch(val) {
             const list = document.getElementById('suggestList');
-            if (!val) { list.style.display = 'none'; return; }
+            if (!val || val.length < 1) { list.style.display = 'none'; return; }
             
-            const filtered = COMMON_SYMBOLS.filter(item => item.s.includes(val.toUpperCase()));
-            if (filtered.length > 0) {
-                list.innerHTML = filtered.map(item => `
-                    <div class="suggest-item" onclick="quickLoad('${item.s}')">
-                        <span>${item.s}</span><span style="color:var(--hint)">${item.n}</span>
-                    </div>
-                `).join('');
-                list.style.display = 'block';
-            } else {
-                list.style.display = 'none';
-            }
+            val = val.toUpperCase().replace('.JK', '');
+            
+            let html = `
+                <div class="suggest-header">Pilih Broker / Pasar</div>
+                <div class="suggest-item" onclick="loadWithBroker('BINANCE', '${val}')">
+                    <span>${val} <span class="broker-tag">Crypto</span></span><span style="color:var(--hint)">Binance</span>
+                </div>
+                <div class="suggest-item" onclick="loadWithBroker('IDX', '${val}')">
+                    <span>${val} <span class="broker-tag">Stock Indo</span></span><span style="color:var(--hint)">Bursa Efek Indo</span>
+                </div>
+                <div class="suggest-item" onclick="loadWithBroker('OANDA', '${val}')">
+                    <span>${val} <span class="broker-tag">Forex/Gold</span></span><span style="color:var(--hint)">Oanda</span>
+                </div>
+                <div class="suggest-item" onclick="loadWithBroker('NYSE', '${val}')">
+                    <span>${val} <span class="broker-tag">Stock US</span></span><span style="color:var(--hint)">NYSE</span>
+                </div>
+                <div class="suggest-item" onclick="loadWithBroker('NASDAQ', '${val}')">
+                    <span>${val} <span class="broker-tag">Stock US</span></span><span style="color:var(--hint)">NASDAQ</span>
+                </div>
+            `;
+            
+            list.innerHTML = html;
+            list.style.display = 'block';
         }
 
-        function quickLoad(symbol, el = null) {
-            if (el) {
-                document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-                el.classList.add('active');
+        function loadWithBroker(broker, symbol) {
+            symbol = symbol.toUpperCase();
+            
+            // Auto-append USDT for Binance if not present
+            if (broker === 'BINANCE' && !symbol.endsWith('USDT') && !['BTC', 'ETH', 'SOL', 'BNB'].includes(symbol)) {
+                // Keep it simple, but usually it needs USDT
+                if (symbol.length < 6) symbol += 'USDT';
             }
+            
+            const fullSymbol = `${broker}:${symbol}`;
+            currentSymbol = fullSymbol;
+            
+            document.getElementById('displaySymbol').innerText = symbol;
+            document.getElementById('exchangeSource').innerText = broker + ' Real-time';
             document.getElementById('suggestList').style.display = 'none';
             document.getElementById('symbolSearch').value = '';
-            loadChart(symbol);
+            
+            renderChart(fullSymbol);
         }
 
-        function loadChart(symbol = null) {
-            if (symbol) {
-                if (!symbol.includes(':')) {
-                    symbol = symbol === 'XAUUSD' ? 'OANDA:XAUUSD' : 'BINANCE:' + symbol;
-                }
-                currentSymbol = symbol;
-            }
-            const cleanSymbol = currentSymbol.split(':').pop();
-            document.getElementById('displaySymbol').innerText = cleanSymbol;
-
+        function renderChart(symbol) {
             new TradingView.widget({
                 "autosize": true,
-                "symbol": currentSymbol,
-                "interval": currentTF,
+                "symbol": symbol,
+                "interval": "15",
                 "timezone": "Asia/Jakarta",
                 "theme": "dark",
                 "style": "1",
@@ -292,80 +219,16 @@
             });
         }
 
-        function changeTF(tf, el) {
-            currentTF = tf;
-            document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
-            loadChart();
+        function switchTab(tabId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
+            document.getElementById(`view-${tabId}`).classList.add('active');
+            const idx = ['porto', 'chart', 'market'].indexOf(tabId);
+            document.querySelectorAll('.nav-item')[idx].classList.add('active');
         }
 
-        async function loadPorto() {
-            try {
-                const res = await fetch(`/api/tma/portfolio?user_id=${userId}`);
-                const data = await res.json();
-                document.getElementById('totalBalance').innerText = `$${data.totalValue.toLocaleString(undefined, {maximumFractionDigits:2})}`;
-                document.getElementById('totalPnl').innerText = `${data.pnl >= 0 ? '+' : ''}$${data.pnl.toLocaleString(undefined, {maximumFractionDigits:2})} Today`;
-                
-                let html = '';
-                if (data.assets.length === 0) {
-                    html = '<div class="sub" style="text-align:center; padding:20px;">No assets found. Use /add in bot.</div>';
-                } else {
-                    data.assets.forEach(a => {
-                        html += `
-                            <div class="list-item" onclick="switchTab('chart'); loadChart('${a.symbol}')">
-                                <div><div class="symbol">${a.symbol}</div><div class="sub">${a.amount} Units</div></div>
-                                <div style="text-align:right">
-                                    <div class="symbol">${a.currency}${a.currentValue.toLocaleString()}</div>
-                                    <div class="${a.pnl >= 0 ? 'pos' : 'neg'}" style="font-size:0.75rem">${a.pnl >= 0 ? '+' : ''}${a.pnl.toLocaleString()}</div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                }
-                document.getElementById('portoList').innerHTML = html;
-            } catch (e) {
-                document.getElementById('portoList').innerHTML = 'Failed to load portfolio.';
-            }
-        }
-
-        async function loadMarket() {
-            try {
-                const res = await fetch(`/api/tma/market-pulse`);
-                const data = await res.json();
-                const fg = data.fearGreed;
-                document.getElementById('marketPulse').innerHTML = `
-                    <div class="list-item">
-                        <div class="symbol">Fear & Greed Index</div>
-                        <div class="symbol" style="color:var(--primary)">${fg.value} (${fg.classification})</div>
-                    </div>
-                `;
-
-                const wRes = await fetch(`/api/tma/watchlist?user_id=${userId}`);
-                const watch = await wRes.json();
-                let wHtml = '';
-                if (watch.length === 0) {
-                    wHtml = '<div class="sub" style="text-align:center; padding:20px;">Watchlist is empty.</div>';
-                } else {
-                    watch.forEach(w => {
-                        wHtml += `
-                            <div class="list-item" onclick="switchTab('chart'); loadChart('${w.symbol}')">
-                                <div class="symbol">${w.symbol}</div>
-                                <div style="text-align:right">
-                                    <div class="symbol">${w.currency}${w.price.toLocaleString()}</div>
-                                    <div class="${w.change24h >= 0 ? 'pos' : 'neg'}" style="font-size:0.75rem">${w.change24h.toFixed(2)}%</div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                }
-                document.getElementById('watchList').innerHTML = wHtml;
-            } catch (e) {
-                document.getElementById('marketPulse').innerHTML = 'Failed to load market data.';
-            }
-        }
-
-        // Init
-        loadPorto();
+        // Initial load
+        renderChart(currentSymbol);
     </script>
 </body>
 </html>
