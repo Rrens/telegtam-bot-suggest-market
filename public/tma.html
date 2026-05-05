@@ -129,6 +129,14 @@
             <div class="pill" onclick="loadWithBroker('OANDA', 'XAUUSD')">✨ Gold</div>
             <div class="pill" onclick="loadWithBroker('NYSE', 'AAPL')">🍎 Apple</div>
         </div>
+        
+        <div class="tf-bar">
+            <div class="tf-btn" onclick="changeTF('1', this)">1m</div>
+            <div class="tf-btn" onclick="changeTF('5', this)">5m</div>
+            <div class="tf-btn" onclick="changeTF('15', this)">15m</div>
+            <div class="tf-btn" onclick="changeTF('60', this)">1h</div>
+            <div class="tf-btn active" onclick="changeTF('D', this)">1D</div>
+        </div>
 
         <div class="asset-header">
             <div>
@@ -156,6 +164,7 @@
         tg.expand(); tg.ready();
 
         let currentSymbol = 'BINANCE:BTCUSDT';
+        let currentTF = 'D';
         
         function handleSearch(val) {
             const list = document.getElementById('suggestList');
@@ -210,7 +219,7 @@
             new TradingView.widget({
                 "autosize": true,
                 "symbol": symbol,
-                "interval": "15",
+                "interval": currentTF,
                 "timezone": "Asia/Jakarta",
                 "theme": "dark",
                 "style": "1",
