@@ -110,13 +110,11 @@ export function createBot(): Bot {
   // ── Error handling ──────────────────────────────────────────────────────────
   bot.catch(errorHandler);
 
-  // ── Bot commands menu ───────────────────────────────────────────────────────
+  // ── Bot commands menu (UI) ──────────────────────────────────────────────────
+  // We keep it minimal to encourage using the interactive dashboard
   bot.api.setMyCommands([
-    { command: 'start', description: '🏁 Start & Main Menu' },
-    { command: 'menu', description: '📱 All Features Dashboard' },
+    { command: 'start', description: '🏁 Open Dashboard Terminal' },
     { command: 'app', description: '🚀 Launch Mini App' },
-    { command: 'check', description: '🛡️ Scan Solana CA' },
-    { command: 'help', description: '❓ Get support' },
   ]).catch((err) => log.warn('Failed to set bot commands', { error: err.message }));
 
   return bot;
