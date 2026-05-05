@@ -53,7 +53,9 @@ async function checkBtcWhales(bot: Bot): Promise<void> {
           ``,
           `💰 Amount: <b>${btcAmount.toFixed(2)} BTC</b>`,
           `💵 Value: <b>~$${(btcAmount * 95000).toLocaleString()}</b>`,
-          `🔗 <a href="https://www.blockchain.com/btc/tx/${tx.hash}">View Transaction</a>`,
+          ``,
+          `🔍 <b>Arkham:</b> <a href="https://platform.arkhamintelligence.com/explorer/tx/${tx.hash}">View on Arkham</a>`,
+          `🔗 <b>Explorer:</b> <a href="https://www.blockchain.com/btc/tx/${tx.hash}">Blockchain.com</a>`,
           ``,
           `⚠️ <i>Pergerakan besar di mempool sering mendahului volatilitas harga.</i>`,
         ].join('\n');

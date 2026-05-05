@@ -117,6 +117,8 @@ export class SmartMoneyService {
     const birdeyeUrl = `https://birdeye.so/token/${move.tokenAddress}?chain=solana`;
     const jupiterUrl = `https://jup.ag/tokens/${move.tokenAddress}`;
 
+    const arkhamUrl = `https://platform.arkhamintelligence.com/explorer/address/${move.walletAddress}`;
+
     return [
       `🐋 <b>SMART MONEY ALERT</b> 🐋`,
       ``,
@@ -128,8 +130,8 @@ export class SmartMoneyService {
       `💧 Liquidity: <b>${formatUsd(move.liquidity)}</b>`,
       `📊 Volume 24h: <b>${formatUsd(move.volume24h)}</b>`,
       ``,
-      `🔑 <b>Contract Address:</b>`,
-      `<code>${move.tokenAddress}</code>`,
+      `🔍 <b>Wallet Intel:</b> <a href="${arkhamUrl}">Arkham Profile</a>`,
+      `🔑 <b>CA:</b> <code>${move.tokenAddress}</code>`,
       ``,
       `🔗 <a href="${move.dexUrl}">DexScreener</a>  |  <a href="${birdeyeUrl}">Birdeye</a>  |  <a href="${jupiterUrl}">Buy on Jupiter</a>`,
       ``,
