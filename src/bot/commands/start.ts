@@ -39,7 +39,7 @@ export async function handleStart(ctx: CommandContext<Context>): Promise<void> {
     `/alertnews &lt;symbol&gt; — News alert subscription\n` +
     `/history &lt;symbol&gt; — Past signal history\n` +
     `/profile — Set risk profile & timeframe\n\n` +
-    `👨‍💻 <b>Developer:</b> Rendy Yusuf — <a href="https://www.linkedin.com/in/rendy-yusuf/">LinkedIn</a>\n\n` +
+    `👨‍💻 <b>Developer:</b> Rendy Yusuf — <a href="https://www.rrens.my.id/">Website</a>\n\n` +
     `<i>⚠ Signals are probabilistic. Not financial advice.</i>`,
     { 
       parse_mode: 'HTML',
