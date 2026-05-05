@@ -42,6 +42,11 @@ export function startWebServer() {
     res.sendFile(path.join(process.cwd(), 'public', 'tma.html'));
   });
 
+  // Redirect root to /tma
+  app.get('/', (req, res) => {
+    res.redirect('/tma');
+  });
+
   // API: Get System Stats
   app.get('/api/stats', async (req, res) => {
     try {
