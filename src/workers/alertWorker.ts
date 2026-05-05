@@ -11,6 +11,7 @@ import { config } from '../config';
 import { Bot } from 'grammy';
 import { formatNews } from '../utils/formatter';
 import { sendNotification } from '../utils/notifier';
+import { jobOrchestrator } from '../services/JobOrchestrator';
 
 const ALERT_QUEUE = 'alert-check';
 const NEWS_ALERT_QUEUE = 'news-alert-check';
@@ -19,7 +20,7 @@ export function startAlertWorker(bot: Bot): void {
   AlertService.setBot(bot);
 
   // Price alert queue
-  const alertQueue = new Queue(ALERT_QUEUE, { connection: redis });
+  const alertQueue = jobOrchestrator.register(ALERT_QUEUE);
   const alertWorker = new Worker(
     ALERT_QUEUE,
     async () => {
@@ -39,7 +40,7 @@ export function startAlertWorker(bot: Bot): void {
   });
 
   // News alert queue
-  const newsAlertQueue = new Queue(NEWS_ALERT_QUEUE, { connection: redis });
+  const newsAlertQueue = jobOrchestrator.register(NEWS_ALERT_QUEUE);
   const newsAlertWorker = new Worker(
     NEWS_ALERT_QUEUE,
     async () => {

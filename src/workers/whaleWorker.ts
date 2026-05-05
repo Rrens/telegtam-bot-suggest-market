@@ -1,32 +1,45 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// whaleWorker (upgraded): Real Whale Alert API integration with simulation fallback.
-// Uses https://api.whale-alert.io/v1/transactions (free tier: 1 req/min, >$500K)
-// Set WHALE_ALERT_API_KEY in .env for real data; falls back to simulation if not set.
-// ─────────────────────────────────────────────────────────────────────────────
-
+import { Worker } from 'bullmq';
 import axios from 'axios';
 import { Bot } from 'grammy';
 import { redis } from '../cache/redis';
 import { log } from '../utils/logger';
 import { config } from '../config';
+import { jobOrchestrator } from '../services/JobOrchestrator';
 
+const QUEUE_NAME = 'whale-tracker';
 const INTERVAL_MS = 5 * 60 * 1000; // Check every 5 minutes
 const BTC_WHALE_THRESHOLD = 50;    // Alert if > 50 BTC (approx $3.5M+)
 
 export function startWhaleWorker(bot: Bot) {
-  log.info('🐋 WhaleTracker (Truly Free) Started');
+  const queue = jobOrchestrator.register(QUEUE_NAME);
 
-  setInterval(async () => {
-    try {
-      // 1. Check Real BTC Whales (Public API via Blockchain.info)
-      await checkBtcWhales(bot);
-      
-      // 2. Check High Volume Activity (Whale indicator via DexScreener)
-      await checkVolumeWhales(bot);
-    } catch (err) {
-      log.error('WhaleWorker cycle failed', { error: (err as Error).message });
-    }
-  }, INTERVAL_MS);
+  const worker = new Worker(
+    QUEUE_NAME,
+    async () => {
+      try {
+        // 1. Check Real BTC Whales (Public API via Blockchain.info)
+        await checkBtcWhales(bot);
+        
+        // 2. Check High Volume Activity (Whale indicator via DexScreener)
+        await checkVolumeWhales(bot);
+      } catch (err) {
+        log.error('WhaleWorker cycle failed', { error: (err as Error).message });
+      }
+    },
+    { connection: redis, concurrency: 1 }
+  );
+
+  worker.on('failed', (job, err) => {
+    log.error('whaleWorker failed', { job: job?.id, error: err.message });
+  });
+
+  queue.add('scan', {}, {
+    repeat: { every: INTERVAL_MS },
+    removeOnComplete: 3,
+    removeOnFail: 5,
+  });
+
+  log.info('🐋 WhaleTracker (BullMQ) Started via Orchestrator');
 }
 
 /**

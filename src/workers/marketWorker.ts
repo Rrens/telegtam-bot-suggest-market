@@ -1,13 +1,14 @@
-import { Queue, Worker } from 'bullmq';
+import { Worker } from 'bullmq';
 import { redis } from '../cache/redis';
 import { MarketService } from '../services/MarketService';
 import { log } from '../utils/logger';
 import { Bot } from 'grammy';
+import { jobOrchestrator } from '../services/JobOrchestrator';
 
 const QUEUE_NAME = 'market-watch';
 
 export function startMarketWorker(bot: Bot): void {
-  const queue = new Queue(QUEUE_NAME, { connection: redis });
+  const queue = jobOrchestrator.register(QUEUE_NAME);
 
   const worker = new Worker(
     QUEUE_NAME,
@@ -28,5 +29,5 @@ export function startMarketWorker(bot: Bot): void {
     removeOnFail: 5,
   });
 
-  log.info('Market monitoring worker started');
+  log.info('Market monitoring worker started via Orchestrator');
 }

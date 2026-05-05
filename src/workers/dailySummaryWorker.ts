@@ -14,12 +14,14 @@ import { log } from '../utils/logger';
 import { config } from '../config';
 import { Bot } from 'grammy';
 
+import { jobOrchestrator } from '../services/JobOrchestrator';
+
 const QUEUE_NAME = 'daily-summary';
 const COOLDOWN_KEY = 'daily_summary_last_sent';
 const TOP_CRYPTO = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT'];
 
 export function startDailySummaryWorker(bot: Bot): void {
-  const queue = new Queue(QUEUE_NAME, { connection: redis });
+  const queue = jobOrchestrator.register(QUEUE_NAME);
 
   const worker = new Worker(
     QUEUE_NAME,

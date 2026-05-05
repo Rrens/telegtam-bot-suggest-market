@@ -11,11 +11,13 @@ import { sendNotification } from '../utils/notifier';
 import { log } from '../utils/logger';
 import { Bot } from 'grammy';
 
+import { jobOrchestrator } from '../services/JobOrchestrator';
+
 const QUEUE_NAME = 'solana-screener';
 const INTERVAL_MS = 15 * 60 * 1000; // Every 15 minutes
 
 export function startSolanaScreenerWorker(bot: Bot): void {
-  const queue = new Queue(QUEUE_NAME, { connection: redis });
+  const queue = jobOrchestrator.register(QUEUE_NAME);
 
   const worker = new Worker(
     QUEUE_NAME,

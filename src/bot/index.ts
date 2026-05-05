@@ -35,6 +35,7 @@ import { handleAlertRsi } from './commands/alertrsi';
 import { handleCheck } from './commands/check';
 import { handleWatch, handleWatchlist } from './commands/watchlist';
 import { handleMenu, handleMenuCallbacks } from './commands/menu';
+import { handleScheduler, handleSchedulerCallback } from './commands/scheduler';
 import { activityLogger } from './middleware/activityLogger';
 import { log } from '../utils/logger';
 
@@ -52,6 +53,9 @@ export function createBot(): Bot {
   bot.command('menu', handleMenu);
   bot.command('help', handleHelp);
   bot.command('check', handleCheck); // Tetap ada buat quick scan
+  bot.command('scheduler', handleScheduler);
+  bot.command('broadcast', handleBroadcast);
+  bot.command('admin', handleAdmin);
 
   // Callback query handling for menu
   bot.on('callback_query:data', async (ctx) => {
@@ -70,6 +74,11 @@ export function createBot(): Bot {
       if (data.startsWith('exec_check')) return handleCheck(ctx);
       
       return handleMenuCallbacks(ctx);
+    }
+    
+    // Handle scheduler callbacks
+    if (data === 'refresh_jobs' || data.startsWith('trigger_job:')) {
+      return handleSchedulerCallback(ctx);
     }
   });
 

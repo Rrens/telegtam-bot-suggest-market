@@ -14,6 +14,8 @@ import { formatNewsBroadcast } from '../utils/formatter';
 import { NewsItem } from '../types';
 import { GeminiService } from '../services/GeminiService';
 
+import { jobOrchestrator } from '../services/JobOrchestrator';
+
 const FETCH_QUEUE = 'news-fetch';
 const PROCESS_QUEUE = 'news-process';
 const ALERT_QUEUE = 'news-alert';
@@ -21,8 +23,8 @@ const CLEANUP_QUEUE = 'news-cleanup';
 
 export function startNewsWorker(bot: Bot): void {
   // ── 1. Fetcher Job ────────────────────────────────────────────────────────
-  const fetchQueue = new Queue(FETCH_QUEUE, { connection: redis });
-  const processQueue = new Queue(PROCESS_QUEUE, { connection: redis });
+  const fetchQueue = jobOrchestrator.register(FETCH_QUEUE);
+  const processQueue = jobOrchestrator.register(PROCESS_QUEUE);
 
   new Worker(FETCH_QUEUE, async () => {
     const symbols = await getTrackedSymbols();
@@ -41,7 +43,7 @@ export function startNewsWorker(bot: Bot): void {
   fetchQueue.add('fetch', {}, { repeat: { every: config.intervals.newsPollMs }, removeOnComplete: 3 });
 
   // ── 2. Processor Job ──────────────────────────────────────────────────────
-  const alertQueue = new Queue(ALERT_QUEUE, { connection: redis });
+  const alertQueue = jobOrchestrator.register(ALERT_QUEUE);
 
   new Worker(PROCESS_QUEUE, async (job: Job) => {
     const { symbol, items } = job.data as { symbol: string, items: Partial<NewsItem>[] };
@@ -140,7 +142,7 @@ export function startNewsWorker(bot: Bot): void {
   }, { connection: redis, concurrency: 1 });
 
   // ── 4. Cleanup Job ────────────────────────────────────────────────────────
-  const cleanupQueue = new Queue(CLEANUP_QUEUE, { connection: redis });
+  const cleanupQueue = jobOrchestrator.register(CLEANUP_QUEUE);
   new Worker(CLEANUP_QUEUE, async () => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);

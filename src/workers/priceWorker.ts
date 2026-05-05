@@ -11,10 +11,12 @@ import { db } from '../db';
 import { log } from '../utils/logger';
 import { config } from '../config';
 
+import { jobOrchestrator } from '../services/JobOrchestrator';
+
 const QUEUE_NAME = 'price-poll';
 
 export function startPriceWorker(): void {
-  const queue = new Queue(QUEUE_NAME, { connection: redis });
+  const queue = jobOrchestrator.register(QUEUE_NAME);
   const worker = new Worker(
     QUEUE_NAME,
     async () => {

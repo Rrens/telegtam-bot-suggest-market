@@ -12,6 +12,8 @@ import { config } from '../config';
 import { Bot } from 'grammy';
 import { RugCheckService } from '../services/RugCheckService';
 
+import { jobOrchestrator } from '../services/JobOrchestrator';
+
 const QUEUE_NAME = 'pumpfun-graduation';
 const INTERVAL_MS = 10 * 60 * 1000; // Every 10 minutes
 const COOLDOWN_SECS = 3600 * 6;     // Don't re-alert same token for 6 hours
