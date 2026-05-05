@@ -46,6 +46,7 @@ export const config = {
     logLevel: optional('LOG_LEVEL', 'info'),
     port: parseInt(optional('PORT', '3000')),
     dashboardSecret: optional('ADMIN_DASHBOARD_SECRET', 'super_secret_dashboard_token_2026'),
+    appUrl: optional('BASE_URL', ''), // URL HTTPS buat Mini App (wajib buat Menu Button)
   },
   intervals: {
     pricePollMs: parseInt(optional('PRICE_POLL_INTERVAL_MS', '30000')),

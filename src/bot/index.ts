@@ -101,14 +101,18 @@ export function createBot(): Bot {
   ]).catch((err) => log.warn('Failed to set bot commands', { error: err.message }));
 
   // ── Set Menu Button to Launch Mini App ──────────────────────────────────────
-  // This puts a button next to the input field
-  bot.api.setChatMenuButton({
-    menu_button: {
-      type: 'web_app',
-      text: '📱 Mini App',
-      web_app: { url: `${config.app.dashboardSecret}/tma.html` } // Using placeholder logic, replace with actual URL
-    }
-  }).catch((err) => log.warn('Failed to set chat menu button', { error: err.message }));
+  // Telegram requires HTTPS for Web App buttons.
+  if (config.app.appUrl && config.app.appUrl.startsWith('https')) {
+    bot.api.setChatMenuButton({
+      menu_button: {
+        type: 'web_app',
+        text: '📱 Mini App',
+        web_app: { url: config.app.appUrl }
+      }
+    }).catch((err) => log.warn('Failed to set chat menu button', { error: err.message }));
+  } else {
+    log.info('Chat menu button skipped: BASE_URL is not set or not HTTPS');
+  }
 
   return bot;
 }
