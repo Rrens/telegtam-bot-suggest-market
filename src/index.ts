@@ -12,6 +12,9 @@ import { startSignalWorker } from './workers/signalWorker';
 import { startSolanaScreenerWorker } from './workers/solanaScreenerWorker';
 import { startWhaleWorker } from './workers/whaleWorker';
 import { startSmartMoneyWorker } from './workers/smartMoneyWorker';
+import { startPumpFunWorker } from './workers/pumpFunWorker';
+import { startLpTrackerWorker } from './workers/lpTrackerWorker';
+import { startDailySummaryWorker } from './workers/dailySummaryWorker';
 import { log } from './utils/logger';
 import { redis } from './cache/redis';
 
@@ -48,6 +51,9 @@ async function bootstrap(): Promise<void> {
   startSolanaScreenerWorker(bot); // 🚀 Solana meme coin gem screener
   startWhaleWorker(bot);           // 🐋 Whale movements tracker
   startSmartMoneyWorker(bot);      // 🧠 Smart money wallet tracker
+  startPumpFunWorker(bot);         // 🎓 Pump.fun graduation alerts
+  startLpTrackerWorker(bot);       // 🔒 LP burn/lock tracker
+  startDailySummaryWorker(bot);    // 📰 Daily AI market recap at 21:00 WIB
 
   // 4.5 Start Web Dashboard Server
   startWebServer();

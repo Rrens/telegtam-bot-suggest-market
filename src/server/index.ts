@@ -49,12 +49,20 @@ export function startWebServer() {
       const assets = await db('assets').count('id as cnt').first();
       const signals = await db('signals').count('id as cnt').first();
       const chats = await db('chat_log').count('id as cnt').first();
+      
+      let watchlists = { cnt: 0 };
+      try {
+        watchlists = await db('watchlist').count('id as cnt').first() as any;
+      } catch (e) {
+        // Ignored if table doesn't exist yet
+      }
 
       res.json({
         users: users?.cnt || 0,
         assets: assets?.cnt || 0,
         signals: signals?.cnt || 0,
         chats: chats?.cnt || 0,
+        watchlists: watchlists?.cnt || 0,
       });
     } catch (err) {
       res.status(500).json({ error: 'Failed to fetch stats' });
@@ -138,6 +146,42 @@ export function startWebServer() {
 
     } catch (err) {
       res.status(500).json({ error: 'Failed to load portfolio' });
+    }
+  });
+
+  // API: TMA Watchlist Data
+  app.get('/api/tma/watchlist', async (req, res) => {
+    try {
+      const userId = req.query.user_id;
+      if (!userId) return res.status(400).json({ error: 'Missing user_id' });
+
+      const watchItems = await db('watchlist').where({ user_id: userId }).orderBy('created_at', 'desc');
+      
+      const formattedItems = await Promise.all(watchItems.map(async (w) => {
+        const { PriceService } = require('../services/PriceService');
+        try {
+          const { price, change24h } = await PriceService.getPrice(w.symbol);
+          return {
+            symbol: w.symbol,
+            type: w.asset_type,
+            price,
+            change24h,
+            target: w.entry_price ? parseFloat(w.entry_price) : null
+          };
+        } catch {
+          return {
+            symbol: w.symbol,
+            type: w.asset_type,
+            price: 0,
+            change24h: 0,
+            target: w.entry_price ? parseFloat(w.entry_price) : null
+          };
+        }
+      }));
+
+      res.json(formattedItems);
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to load watchlist' });
     }
   });
 

@@ -110,6 +110,15 @@
         </div>
     </div>
 
+    <div class="card">
+        <div class="stat-label" style="margin-bottom: 12px;">Your Watchlist</div>
+        <div id="watchlistList">
+            <div style="color: var(--hint-color); text-align: center; padding: 20px 0;">
+                Loading watchlist...
+            </div>
+        </div>
+    </div>
+
     <button class="btn" id="closeBtn">Close App</button>
 
     <script>
@@ -163,9 +172,38 @@
                 }
                 document.getElementById('assetsList').innerHTML = html;
 
+                // Load Watchlist
+                const watchRes = await fetch(`/api/tma/watchlist?user_id=${userId}`);
+                const watchData = await watchRes.json();
+                
+                let watchHtml = '';
+                if (watchData.length === 0) {
+                    watchHtml = '<div style="color: var(--hint-color); text-align: center; padding: 20px 0;">Watchlist empty. Add via /watch</div>';
+                } else {
+                    watchData.forEach(w => {
+                        const isPos = w.change24h >= 0;
+                        const targetHtml = w.target ? `<span style="font-size: 0.8rem; color: var(--hint-color);">🎯 $${w.target}</span>` : '';
+                        watchHtml += `
+                            <div class="list-item">
+                                <div>
+                                    <div class="asset-name">${w.symbol} ${targetHtml}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div class="asset-name">$${w.price.toFixed(w.price < 1 ? 6 : 2)}</div>
+                                    <div class="asset-pnl ${isPos ? 'positive' : 'negative'}">
+                                        ${isPos ? '+' : ''}${w.change24h.toFixed(2)}%
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                document.getElementById('watchlistList').innerHTML = watchHtml;
+
             } catch (err) {
                 console.error(err);
                 document.getElementById('assetsList').innerHTML = '<div style="color: var(--hint-color); text-align: center;">Error loading data</div>';
+                document.getElementById('watchlistList').innerHTML = '<div style="color: var(--hint-color); text-align: center;">Error loading data</div>';
             }
         }
 

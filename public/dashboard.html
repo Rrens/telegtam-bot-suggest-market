@@ -132,6 +132,10 @@
             <div class="stat-label">Total Bot Interactions</div>
             <div class="stat-value" id="statChats">-</div>
         </div>
+        <div class="glass-card" style="border-color: rgba(167, 139, 250, 0.5);">
+            <div class="stat-label">Watchlist Items</div>
+            <div class="stat-value" id="statWatchlist">-</div>
+        </div>
     </div>
 
     <div class="glass-card">
@@ -166,6 +170,7 @@
                 document.getElementById('statAssets').innerText = data.assets;
                 document.getElementById('statSignals').innerText = data.signals;
                 document.getElementById('statChats').innerText = data.chats;
+                document.getElementById('statWatchlist').innerText = data.watchlists;
             } catch (err) {
                 console.error('Stats fetch error:', err);
             }

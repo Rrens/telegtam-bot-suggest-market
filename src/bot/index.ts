@@ -32,6 +32,8 @@ import { handleSentiment } from './commands/sentiment';
 import { handleToday } from './commands/today';
 import { handleSmartMoney } from './commands/smartmoney';
 import { handleAlertRsi } from './commands/alertrsi';
+import { handleCheck } from './commands/check';
+import { handleWatch, handleWatchlist } from './commands/watchlist';
 import { activityLogger } from './middleware/activityLogger';
 import { log } from '../utils/logger';
 
@@ -72,6 +74,9 @@ export function createBot(): Bot {
   bot.command('today', handleToday);
   bot.command('smartmoney', handleSmartMoney);
   bot.command('alertrsi', handleAlertRsi);
+  bot.command('check', handleCheck);
+  bot.command('watch', handleWatch);
+  bot.command('watchlist', handleWatchlist);
 
   // ── Channel Support ─────────────────────────────────────────────────────────
   // Allows commands like /info or /kurs to work when posted in a channel
@@ -122,6 +127,9 @@ export function createBot(): Bot {
     { command: 'today', description: '🌅 Market overview & top movers today' },
     { command: 'smartmoney', description: '🐋 Smart money wallet tracker' },
     { command: 'alertrsi', description: '📊 Set RSI / MA Cross technical alerts' },
+    { command: 'check', description: '🛡️ RugCheck a Solana contract address' },
+    { command: 'watch', description: '👁 Add/remove from watchlist' },
+    { command: 'watchlist', description: '👁 View your token watchlist' },
   ]).catch((err) => log.warn('Failed to set bot commands', { error: err.message }));
 
   return bot;
