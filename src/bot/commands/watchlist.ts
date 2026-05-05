@@ -6,6 +6,14 @@ import { CommandContext, Context, InlineKeyboard } from 'grammy';
 import { db } from '../../db';
 import { PriceService } from '../../services/PriceService';
 
+export async function handleWatch(ctx: CommandContext<Context>): Promise<void> {
+  const symbol = (ctx as any).match?.[1]?.toUpperCase();
+  if (!symbol) return ctx.reply('👁 Gunakan: <code>/watch &lt;symbol&gt;</code>', { parse_mode: 'HTML' });
+  // Logic minimal untuk nambahin watchlist
+  await db('watchlist').insert({ user_id: ctx.from!.id.toString(), symbol }).onConflict(['user_id', 'symbol']).ignore();
+  await ctx.reply(`✅ <code>${symbol}</code> berhasil ditambah ke watchlist!`, { parse_mode: 'HTML' });
+}
+
 export async function handleWatchlist(ctx: CommandContext<Context> | Context): Promise<void> {
   const userId = ctx.from?.id;
   if (!userId) return;

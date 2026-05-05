@@ -12,6 +12,7 @@ export async function handleSentiment(ctx: CommandContext<Context> | Context): P
 
   try {
     const data = await FearGreedService.getIndex();
+    if (!data) throw new Error('Data sentiment tidak tersedia');
     
     const emoji = 
       data.classification === 'Extreme Fear' ? '😨' :

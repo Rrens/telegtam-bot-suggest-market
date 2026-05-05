@@ -163,6 +163,26 @@ export class SolanaScreenerService {
   }
 
   /**
+   * Alias for screen() for better naming in gems feature.
+   */
+  static async getGraduatedTokens(): Promise<SolanaToken[]> {
+    return this.screen();
+  }
+
+  /**
+   * Fetch recent whale movements (simulation/mock for now based on dex activity).
+   */
+  static async getWhaleMovements(): Promise<any[]> {
+    const gems = await this.screen();
+    return gems.map(g => ({
+      symbol: g.symbol,
+      type: Math.random() > 0.5 ? 'buy' : 'sell',
+      usdAmount: Math.floor(Math.random() * 50000) + 10000,
+      wallet: g.address
+    }));
+  }
+
+  /**
    * Format token data for Telegram message.
    */
   static formatAlert(token: SolanaToken): string {

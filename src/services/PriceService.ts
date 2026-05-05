@@ -238,6 +238,33 @@ export class PriceService {
   }
 
   /**
+   * Get top 24h gainers and losers from Binance.
+   */
+  static async getTopMovers(): Promise<{ gainers: any[], losers: any[] }> {
+    try {
+      const res = await axiosInstance.get(`${config.apis.binanceRestUrl}/ticker/24hr`, { timeout: 15000 });
+      const tickers = res.data as any[];
+      
+      const movers = tickers
+        .filter(t => t.symbol.endsWith('USDT'))
+        .map(t => ({
+          symbol: t.symbol,
+          price: parseFloat(t.lastPrice),
+          change: parseFloat(t.priceChangePercent)
+        }))
+        .sort((a, b) => b.change - a.change);
+
+      return {
+        gainers: movers.slice(0, 10),
+        losers: [...movers].reverse().slice(0, 10)
+      };
+    } catch (err) {
+      log.warn('Failed to fetch top movers', { error: (err as Error).message });
+      return { gainers: [], losers: [] };
+    }
+  }
+
+  /**
    * Synchronous getter for the last known rate.
    */
   static getLastUsdIdrRate(): number {
