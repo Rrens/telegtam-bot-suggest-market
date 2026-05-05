@@ -72,13 +72,17 @@ export function createBot(): Bot {
       return handleMenuCallbacks(ctx);
     }
   });
-  // Allows commands like /info or /kurs to work when posted in a channel
-  bot.on('channel_post:text', async (ctx, next) => {
-    log.info(`Received post from channel: ${ctx.chat.title} (ID: ${ctx.chat.id})`);
-    const text = ctx.channelPost.text;
-    if (text.startsWith('/info')) return handleInfo(ctx as any);
-    if (text.startsWith('/kurs')) return handleKurs(ctx as any);
+
+  bot.on('message:text', async (ctx, next) => {
+    const text = ctx.message.text;
+    if (text === '🚀 Launch Mini App') return handleApp(ctx as any);
+    if (text === '📜 Main Menu') return handleMenu(ctx);
+    
+    if (text.startsWith('/start')) return handleMenu(ctx);
+    if (text.startsWith('/app')) return handleApp(ctx as any);
+    if (text.startsWith('/menu')) return handleMenu(ctx);
     if (text.startsWith('/help')) return handleHelp(ctx as any);
+    if (text.startsWith('/check')) return handleCheck(ctx as any);
     await next();
   });
 

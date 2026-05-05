@@ -2,7 +2,7 @@
 // /menu command: Interactive dashboard with direct execution logic.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { Context, InlineKeyboard } from 'grammy';
+import { Context, InlineKeyboard, Keyboard } from 'grammy';
 import { handleHelp } from './help';
 import { handleToday } from './today';
 import { handleSentiment } from './sentiment';
@@ -27,7 +27,14 @@ export async function handleMenu(ctx: Context): Promise<void> {
       ].join('\n')
     : `📱 <b>Main Dashboard</b>\nPilih fitur yang mau lo eksekusi:`;
 
-  const keyboard = new InlineKeyboard()
+  // Persistent Reply Keyboard (Tampil di atas input field)
+  const persistentKb = new Keyboard()
+    .text('🚀 Launch Mini App')
+    .text('📜 Main Menu')
+    .resized()
+    .persistent();
+
+  const inlineKb = new InlineKeyboard()
     .text('🚀 Market Intel', 'cat_market')
     .text('🛡️ Security & Watch', 'cat_security').row()
     .text('📊 Alerts & Tools', 'cat_alerts')
@@ -35,9 +42,19 @@ export async function handleMenu(ctx: Context): Promise<void> {
     .text('❓ Help Center', 'cmd_help');
 
   if (ctx.callbackQuery) {
-    await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: keyboard });
+    await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: inlineKb });
   } else {
-    await ctx.reply(text, { parse_mode: 'HTML', reply_markup: keyboard });
+    // We can't send both reply_markup types in one message via the standard helper,
+    // so we send the persistent keyboard with the main menu message.
+    await ctx.reply(text, { 
+      parse_mode: 'HTML', 
+      reply_markup: persistentKb
+    });
+    // Then send the inline options as a second message or just keep it simple.
+    await ctx.reply('Pilih kategori:', {
+      reply_markup: inlineKb,
+      parse_mode: 'HTML'
+    });
   }
 }
 
