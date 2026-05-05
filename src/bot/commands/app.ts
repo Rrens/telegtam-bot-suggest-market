@@ -1,5 +1,6 @@
 import { CommandContext, Context } from 'grammy';
 import { config } from '../../config';
+import { log } from '../../utils/logger';
 
 export async function handleApp(ctx: CommandContext<Context>): Promise<void> {
   const baseUrl = process.env.BASE_URL || `http://localhost:${config.app.port || 3000}`;
