@@ -100,5 +100,15 @@ export function createBot(): Bot {
     { command: 'app', description: '🚀 Launch Mini App' },
   ]).catch((err) => log.warn('Failed to set bot commands', { error: err.message }));
 
+  // ── Set Menu Button to Launch Mini App ──────────────────────────────────────
+  // This puts a button next to the input field
+  bot.api.setChatMenuButton({
+    menu_button: {
+      type: 'web_app',
+      text: '📱 Mini App',
+      web_app: { url: `${config.app.dashboardSecret}/tma.html` } // Using placeholder logic, replace with actual URL
+    }
+  }).catch((err) => log.warn('Failed to set chat menu button', { error: err.message }));
+
   return bot;
 }

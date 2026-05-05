@@ -241,8 +241,13 @@ export class PriceService {
    * Get top 24h gainers and losers from Binance.
    */
   static async getTopMovers(): Promise<{ gainers: any[], losers: any[] }> {
+    const cacheKey = 'market:top_movers';
+    const cached = await cacheGet<{ gainers: any[], losers: any[] }>(cacheKey);
+    if (cached) return cached;
+
     try {
-      const res = await axiosInstance.get(`${config.apis.binanceRestUrl}/ticker/24hr`, { timeout: 15000 });
+      // Ambil data ticker 24 jam (timeout ditambah jadi 30s)
+      const res = await axiosInstance.get(`${config.apis.binanceRestUrl}/ticker/24hr`, { timeout: 30000 });
       const tickers = res.data as any[];
       
       const movers = tickers
@@ -252,12 +257,17 @@ export class PriceService {
           price: parseFloat(t.lastPrice),
           change: parseFloat(t.priceChangePercent)
         }))
+        .filter(t => t.price > 0) // Hindari koin delisted/error
         .sort((a, b) => b.change - a.change);
 
-      return {
+      const result = {
         gainers: movers.slice(0, 10),
         losers: [...movers].reverse().slice(0, 10)
       };
+
+      // Simpan di cache selama 5 menit (300s)
+      await cacheSet(cacheKey, result, 300);
+      return result;
     } catch (err) {
       log.warn('Failed to fetch top movers', { error: (err as Error).message });
       return { gainers: [], losers: [] };
