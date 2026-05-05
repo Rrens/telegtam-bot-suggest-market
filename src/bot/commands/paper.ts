@@ -69,13 +69,25 @@ export async function handlePaperBuy(ctx: CommandContext<Context>): Promise<void
   const userId = ctx.from!.id;
   const args = ctx.match?.split(' ') || [];
 
-  if (args.length < 2) {
-    await ctx.reply('Format: /paperbuy <simbol> <jumlah_usd>\nContoh: /paperbuy BTCUSDT 100');
+    if (args.length < 2) {
+    await ctx.reply('Format: /paperbuy <simbol> <jumlah_usd> [tp=harga] [sl=harga] [ts=%]\nContoh: /paperbuy BTCUSDT 100 tp=75000 sl=60000 ts=5');
     return;
   }
 
   const symbol = args[0].toUpperCase();
   const spendUsd = parseFloat(args[1]);
+  
+  // Parse advanced options
+  let tp_price: number | null = null;
+  let sl_price: number | null = null;
+  let trailing_stop_pct: number | null = null;
+
+  for (let i = 2; i < args.length; i++) {
+    const arg = args[i].toLowerCase();
+    if (arg.startsWith('tp=')) tp_price = parseFloat(arg.split('=')[1]);
+    if (arg.startsWith('sl=')) sl_price = parseFloat(arg.split('=')[1]);
+    if (arg.startsWith('ts=')) trailing_stop_pct = parseFloat(arg.split('=')[1]);
+  }
 
   if (isNaN(spendUsd) || spendUsd <= 0) {
     await ctx.reply('Jumlah USD tidak valid.');
@@ -117,6 +129,10 @@ export async function handlePaperBuy(ctx: CommandContext<Context>): Promise<void
         await trx('paper_positions').where({ id: pos.id }).update({
           amount: totalAmount,
           avg_price: newAvg,
+          tp_price: tp_price || pos.tp_price,
+          sl_price: sl_price || pos.sl_price,
+          trailing_stop_pct: trailing_stop_pct || pos.trailing_stop_pct,
+          highest_price: Math.max(currentPrice, pos.highest_price || 0),
           updated_at: trx.fn.now()
         });
       } else {
@@ -124,12 +140,21 @@ export async function handlePaperBuy(ctx: CommandContext<Context>): Promise<void
           user_id: userId,
           symbol,
           amount: amountToBuy,
-          avg_price: currentPrice
+          avg_price: currentPrice,
+          tp_price,
+          sl_price,
+          trailing_stop_pct,
+          highest_price: currentPrice
         });
       }
     });
 
-    await ctx.reply(`✅ <b>BERHASIL DIBELI (PAPER)</b>\n\nSimbol: ${symbol}\nHarga: $${currentPrice.toFixed(4)}\nJumlah: ${amountToBuy.toFixed(6)}\nTotal: $${spendUsd.toFixed(2)}`, { parse_mode: 'HTML' });
+    let extraInfo = '';
+    if (tp_price) extraInfo += `\n🎯 TP: $${tp_price}`;
+    if (sl_price) extraInfo += `\n🛡️ SL: $${sl_price}`;
+    if (trailing_stop_pct) extraInfo += `\n📉 TS: ${trailing_stop_pct}%`;
+
+    await ctx.reply(`✅ <b>BERHASIL DIBELI (PAPER)</b>\n\nSimbol: ${symbol}\nHarga: $${currentPrice.toFixed(4)}\nJumlah: ${amountToBuy.toFixed(6)}\nTotal: $${spendUsd.toFixed(2)}${extraInfo}`, { parse_mode: 'HTML' });
 
   } catch (err) {
     log.error('Paper buy failed', { error: (err as Error).message });
@@ -200,5 +225,70 @@ export async function handlePaperSell(ctx: CommandContext<Context>): Promise<voi
   } catch (err) {
     log.error('Paper sell failed', { error: (err as Error).message });
     await ctx.reply('❌ Gagal melakukan penjualan.');
+  }
+}
+
+/**
+ * Handle quick buy from inline button (Solana Gem Alerts)
+ */
+export async function handlePaperQuickBuy(ctx: Context): Promise<void> {
+  const data = ctx.callbackQuery?.data;
+  if (!data || !data.startsWith('pb_')) return;
+
+  const address = data.replace('pb_', '');
+  const userId = ctx.from!.id;
+  const spendUsd = 10; // Default $10 for quick buy
+
+  try {
+    const user = await db('users').where({ id: userId }).first();
+    if (!user) {
+      await ctx.answerCallbackQuery('Silakan /start terlebih dahulu.');
+      return;
+    }
+
+    if (parseFloat(user.paper_balance) < spendUsd) {
+      await ctx.answerCallbackQuery('❌ Saldo paper trading tidak cukup ($10).');
+      return;
+    }
+
+    const { price: currentPrice, symbol } = await PriceService.getPrice(address);
+    const amountToBuy = spendUsd / currentPrice;
+
+    await db.transaction(async (trx) => {
+      await trx('users').where({ id: userId }).decrement('paper_balance', spendUsd);
+      await trx('paper_trades').insert({
+        user_id: userId,
+        symbol: address, // Store CA for Solana tokens
+        type: 'BUY',
+        amount: amountToBuy,
+        price: currentPrice,
+        total_value: spendUsd
+      });
+
+      const pos = await trx('paper_positions').where({ user_id: userId, symbol: address }).first();
+      if (pos) {
+        const totalAmount = parseFloat(pos.amount) + amountToBuy;
+        const totalCost = (parseFloat(pos.amount) * parseFloat(pos.avg_price)) + spendUsd;
+        await trx('paper_positions').where({ id: pos.id }).update({
+          amount: totalAmount,
+          avg_price: totalCost / totalAmount,
+          updated_at: trx.fn.now()
+        });
+      } else {
+        await trx('paper_positions').insert({
+          user_id: userId,
+          symbol: address,
+          amount: amountToBuy,
+          avg_price: currentPrice
+        });
+      }
+    });
+
+    await ctx.answerCallbackQuery(`✅ Berhasil beli $10 ${symbol}!`);
+    await ctx.reply(`🎯 <b>QUICK BUY SUCCESS (PAPER)</b>\n\nToken: <b>${symbol}</b>\nJumlah: ${amountToBuy.toFixed(4)}\nHarga: $${currentPrice.toFixed(6)}\nSisa Saldo: $${(parseFloat(user.paper_balance) - spendUsd).toFixed(2)}`, { parse_mode: 'HTML' });
+    
+  } catch (err) {
+    log.error('Paper quick buy failed', { error: (err as Error).message });
+    await ctx.answerCallbackQuery('❌ Gagal melakukan pembelian.');
   }
 }

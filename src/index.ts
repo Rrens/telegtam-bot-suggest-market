@@ -15,6 +15,7 @@ import { startSmartMoneyWorker } from './workers/smartMoneyWorker';
 import { startPumpFunWorker } from './workers/pumpFunWorker';
 import { startLpTrackerWorker } from './workers/lpTrackerWorker';
 import { startDailySummaryWorker } from './workers/dailySummaryWorker';
+import { startPaperExecutionWorker } from './workers/paperExecutionWorker';
 import { log } from './utils/logger';
 import { redis } from './cache/redis';
 
@@ -54,6 +55,7 @@ async function bootstrap(): Promise<void> {
   startPumpFunWorker(bot);         // 🎓 Pump.fun graduation alerts
   startLpTrackerWorker(bot);       // 🔒 LP burn/lock tracker
   startDailySummaryWorker(bot);    // 📰 Daily AI market recap at 21:00 WIB
+  startPaperExecutionWorker(bot);  // 🎮 TP/SL/Trailing Stop execution
 
   // 4.5 Start Web Dashboard Server
   startWebServer();

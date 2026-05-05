@@ -129,6 +129,37 @@
         </div>
     </div>
 
+    <!-- 7. TRADE (Paper Trading) -->
+    <div id="view-trade" class="view">
+        <h1>Paper Trade</h1>
+        <div class="card" style="background: rgba(59, 130, 246, 0.1); border: 1px solid var(--primary);">
+            <div class="sub">AVAILABLE CASH (PAPER)</div>
+            <div style="font-size: 1.5rem; font-weight: 800;" id="trade-balance">$0.00</div>
+        </div>
+
+        <div class="card">
+            <div style="font-weight: 800; margin-bottom: 15px;">🚀 Execute Trade</div>
+            <input type="text" id="trade-symbol" class="search-input" placeholder="Symbol (e.g. BTCUSDT)">
+            <input type="number" id="trade-amount" class="search-input" placeholder="Amount (USD)">
+            
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 0.75rem; color: var(--hint); display: block; margin-bottom: 5px;">Advanced Options (Optional)</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="number" id="trade-tp" class="search-input" style="margin-bottom: 0;" placeholder="TP Price">
+                    <input type="number" id="trade-sl" class="search-input" style="margin-bottom: 0;" placeholder="SL Price">
+                </div>
+                <input type="number" id="trade-ts" class="search-input" style="margin-top: 8px;" placeholder="Trailing Stop %">
+            </div>
+
+            <button class="btn" onclick="executeTrade()" id="trade-btn">Confirm Paper Buy</button>
+        </div>
+
+        <div class="card">
+            <div style="font-weight: 800; margin-bottom: 10px;">Active Positions</div>
+            <div id="trade-positions">Loading positions...</div>
+        </div>
+    </div>
+
     <!-- 5. SECURITY (RugCheck) -->
     <div id="view-security" class="view">
         <h1>Security</h1>
@@ -151,7 +182,7 @@
         <div class="nav-item" onclick="tab('charts')"><span class="nav-icon">📈</span><span>Charts</span></div>
         <div class="nav-item" onclick="tab('intel')"><span class="nav-icon">🔥</span><span>Intel</span></div>
         <div class="nav-item" onclick="tab('scanner')"><span class="nav-icon">💎</span><span>Scan</span></div>
-        <div class="nav-item" onclick="tab('security')"><span class="nav-icon">🛡️</span><span>Safe</span></div>
+        <div class="nav-item" onclick="tab('trade')"><span class="nav-icon">🚀</span><span>Trade</span></div>
         <div class="nav-item" onclick="tab('alerts')"><span class="nav-icon">🔔</span><span>Alert</span></div>
     </nav>
 
@@ -166,11 +197,12 @@
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
             document.getElementById(`view-${id}`).classList.add('active');
-            const idx = ['home', 'charts', 'intel', 'scanner', 'security', 'alerts'].indexOf(id);
+            const idx = ['home', 'charts', 'intel', 'scanner', 'trade', 'alerts'].indexOf(id);
             document.querySelectorAll('.nav-item')[idx].classList.add('active');
             
             if (id === 'home' && document.getElementById('home-assets').innerText.includes('Tap')) loadHome();
             if (id === 'charts') renderChart(curSymbol);
+            if (id === 'trade') loadPaperTrade();
             if (id === 'alerts') loadAlerts(); // Auto-load alerts when tab is opened
         }
 
@@ -304,6 +336,71 @@
             document.getElementById('chart-search').value = '';
             renderChart(curSymbol);
             loadInsight(symbol);
+            document.getElementById('trade-symbol').value = symbol;
+        }
+
+        async function loadPaperTrade() {
+            const posContainer = document.getElementById('trade-positions');
+            posContainer.innerHTML = '<div class="loading-text">Loading portfolio...</div>';
+            try {
+                const res = await fetch(`/api/tma/paper/portfolio?user_id=${userId}`);
+                const data = await res.json();
+                document.getElementById('trade-balance').innerText = `$${data.balance.toLocaleString()}`;
+                
+                let html = '';
+                if (data.positions.length === 0) html = '<div class="sub">No active paper positions.</div>';
+                data.positions.forEach(p => {
+                    html += `<div class="list-item">
+                        <div>
+                            <div class="symbol">${p.symbol}</div>
+                            <div class="sub">Avg: $${p.avg_price.toLocaleString()} | ${p.amount.toFixed(4)} Units</div>
+                            <div style="font-size: 0.6rem; color: var(--accent); margin-top: 4px;">
+                                ${p.tp_price ? `🎯 TP: $${p.tp_price} ` : ''}
+                                ${p.sl_price ? `🛡️ SL: $${p.sl_price} ` : ''}
+                                ${p.trailing_stop_pct ? `📉 TS: ${p.trailing_stop_pct}%` : ''}
+                            </div>
+                        </div>
+                        <div style="text-align:right">
+                            <div class="symbol">$${p.value.toLocaleString()}</div>
+                            <div class="${p.pnl>=0?'pos':'neg'}">${p.pnl>=0?'+':''}${p.pnlPct.toFixed(2)}%</div>
+                        </div>
+                    </div>`;
+                });
+                posContainer.innerHTML = html;
+            } catch (e) { posContainer.innerHTML = 'Failed to load.'; }
+        }
+
+        async function executeTrade() {
+            const btn = document.getElementById('trade-btn');
+            const symbol = document.getElementById('trade-symbol').value;
+            const amount = document.getElementById('trade-amount').value;
+            const tp = document.getElementById('trade-tp').value;
+            const sl = document.getElementById('trade-sl').value;
+            const ts = document.getElementById('trade-ts').value;
+
+            if (!symbol || !amount) { tg.showAlert('Please enter symbol and amount.'); return; }
+
+            btn.disabled = true; btn.innerText = 'Executing...';
+            try {
+                const res = await fetch('/api/tma/paper/trade', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        user_id: userId, symbol, type: 'BUY', amountUsd: parseFloat(amount),
+                        tp: tp ? parseFloat(tp) : null,
+                        sl: sl ? parseFloat(sl) : null,
+                        ts: ts ? parseFloat(ts) : null
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    tg.showAlert(`Successfully bought ${symbol}!`);
+                    loadPaperTrade();
+                } else {
+                    tg.showAlert(`Error: ${data.error}`);
+                }
+            } catch (e) { tg.showAlert('Execution failed.'); }
+            btn.disabled = false; btn.innerText = 'Confirm Paper Buy';
         }
 
         async function loadInsight(symbol) {

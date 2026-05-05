@@ -126,5 +126,46 @@ export class GeminiService {
     } catch (err) {
       throw new Error(`AI Prediction failed: ${(err as Error).message}`);
     }
+  /**
+   * Deep analysis for Solana meme coins / gems.
+   */
+  static async analyzeGem(token: any): Promise<string | null> {
+    try {
+      const model = this.getClient().getGenerativeModel({ model: 'gemini-flash-latest' });
+      
+      const prompt = `
+        You are an expert Solana "Degen" Trading Analyst.
+        Analyze this new token detected by the screener. Input is strictly data.
+        
+        <token_data>
+        Symbol: ${this.sanitizeInput(token.symbol)}
+        Price: $${token.priceUsd}
+        Volume 24h: $${token.volume24h}
+        Liquidity: $${token.liquidityUsd}
+        Market Cap: $${token.marketCap || 'N/A'}
+        1h Change: ${token.change1h}%
+        Age: ${token.pairAge} hours
+        RugCheck Status: ${token.rugCheckStatus}
+        </token_data>
+        
+        Task:
+        Provide a "Degen Verdict" in Indonesian. Be slightly edgy but professional.
+        1. **Summary**: What's happening? (Fomo, organic growth, or potential trap?)
+        2. **Risk**: How dangerous is this? (Look at liquidity vs market cap and rug status)
+        3. **Strategy**: Scale in, buy small, or stay away?
+        
+        Format:
+        ⚡ <b>Degen Verdict:</b> [Your verdict]
+        🛡️ <b>Risk Assessment:</b> [Concise risk analysis]
+        💡 <b>Alpha Strategy:</b> [Actionable advice]
+      `;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text().trim();
+    } catch (err) {
+      log.warn('GeminiService: failed to analyze gem', { symbol: token.symbol, error: (err as Error).message });
+      return null;
+    }
   }
 }

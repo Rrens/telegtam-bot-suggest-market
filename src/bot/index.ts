@@ -26,7 +26,7 @@ import { handleCredits } from './commands/credits';
 import { handleFlush } from './commands/flush';
 import { handleApp } from './commands/app';
 import { handleAdmin, handleBroadcast } from './commands/admin';
-import { handlePaperStatus, handlePaperBuy, handlePaperSell } from './commands/paper';
+import { handlePaperStatus, handlePaperBuy, handlePaperSell, handlePaperQuickBuy } from './commands/paper';
 import { handleSolana } from './commands/solana';
 import { handleSentiment } from './commands/sentiment';
 import { handleToday } from './commands/today';
@@ -79,6 +79,11 @@ export function createBot(): Bot {
     // Handle scheduler callbacks
     if (data === 'refresh_jobs' || data.startsWith('trigger_job:')) {
       return handleSchedulerCallback(ctx);
+    }
+
+    // Handle paper trading quick buy
+    if (data.startsWith('pb_')) {
+      return handlePaperQuickBuy(ctx);
     }
   });
 

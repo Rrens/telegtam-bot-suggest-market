@@ -336,6 +336,84 @@ export function startWebServer() {
     } catch (err) { res.status(500).json({ error: 'Delete failed' }); }
   });
 
+  // API: TMA Paper Trading Portfolio
+  app.get('/api/tma/paper/portfolio', async (req, res) => {
+    try {
+      const userId = req.query.user_id;
+      if (!userId) return res.status(400).json({ error: 'Missing user_id' });
+
+      const user = await db('users').where({ id: userId }).first();
+      const positions = await db('paper_positions').where({ user_id: userId });
+      
+      const formattedPositions = await Promise.all(positions.map(async (pos) => {
+        const { PriceService } = require('../services/PriceService');
+        const { price: currentPrice } = await PriceService.getPrice(pos.symbol);
+        const cost = pos.amount * pos.avg_price;
+        const value = pos.amount * currentPrice;
+        return {
+          ...pos,
+          currentPrice,
+          value,
+          pnl: value - cost,
+          pnlPct: ((value - cost) / cost) * 100
+        };
+      }));
+
+      res.json({
+        balance: user?.paper_balance || 0,
+        positions: formattedPositions
+      });
+    } catch (err) { res.status(500).json({ error: 'Failed to load paper portfolio' }); }
+  });
+
+  // API: TMA Paper Trade Execution
+  app.post('/api/tma/paper/trade', async (req, res) => {
+    const { user_id, symbol, type, amountUsd, tp, sl, ts } = req.body;
+    if (!user_id || !symbol || !amountUsd) return res.status(400).json({ error: 'Missing data' });
+
+    try {
+      const { PriceService } = require('../services/PriceService');
+      const { price: currentPrice } = await PriceService.getPrice(symbol);
+      const amount = amountUsd / currentPrice;
+
+      await db.transaction(async (trx) => {
+        if (type === 'BUY') {
+          const user = await trx('users').where({ id: user_id }).first();
+          if (user.paper_balance < amountUsd) throw new Error('Insufficient balance');
+
+          await trx('users').where({ id: user_id }).decrement('paper_balance', amountUsd);
+          await trx('paper_trades').insert({
+            user_id, symbol, type: 'BUY', amount, price: currentPrice, total_value: amountUsd
+          });
+
+          const existing = await trx('paper_positions').where({ user_id, symbol }).first();
+          if (existing) {
+            const totalAmount = parseFloat(existing.amount) + amount;
+            const totalCost = (parseFloat(existing.amount) * parseFloat(existing.avg_price)) + amountUsd;
+            await trx('paper_positions').where({ id: existing.id }).update({
+              amount: totalAmount,
+              avg_price: totalCost / totalAmount,
+              tp_price: tp || existing.tp_price,
+              sl_price: sl || existing.sl_price,
+              trailing_stop_pct: ts || existing.trailing_stop_pct,
+              updated_at: trx.fn.now()
+            });
+          } else {
+            await trx('paper_positions').insert({
+              user_id, symbol, amount, avg_price: currentPrice,
+              tp_price: tp, sl_price: sl, trailing_stop_pct: ts, highest_price: currentPrice
+            });
+          }
+        }
+        // Additional types like SELL could be added here
+      });
+
+      res.json({ success: true, price: currentPrice, amount });
+    } catch (err) { 
+      res.status(500).json({ error: (err as Error).message }); 
+    }
+  });
+
   app.listen(port, () => {
     log.info(`Web Dashboard is running at http://localhost:${port}/dashboard`);
   });

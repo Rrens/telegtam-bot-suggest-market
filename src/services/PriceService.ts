@@ -35,6 +35,7 @@ export class PriceService {
       upper.endsWith('USDC')
     ) return 'crypto';
     if (upper.length === 6 && /^[A-Z]{6}$/.test(upper)) return 'forex';
+    if (upper.length > 30 || upper.startsWith('0X') || /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(upper)) return 'crypto_dex';
     return 'stock';
   }
 
@@ -62,6 +63,8 @@ export class PriceService {
         data = await withRetry(() => this.fetchYahooPrice(yahooSymbol));
         data.symbol = symbol.toUpperCase();
       }
+    } else if (type === 'crypto_dex') {
+      data = await withRetry(() => this.fetchDexScreenerPrice(symbol));
     } else {
       data = await withRetry(() => this.fetchYahooPrice(symbol));
     }
@@ -133,6 +136,27 @@ export class PriceService {
       marketCap: coin.market_cap,
       high24h: coin.high_24h,
       low24h: coin.low_24h,
+      timestamp: Date.now(),
+    };
+  }
+
+  /**
+   * Fetch price from DexScreener (for Solana/MEME coins).
+   */
+  private static async fetchDexScreenerPrice(address: string): Promise<PriceData> {
+    const res = await axiosInstance.get(`https://api.dexscreener.com/latest/dex/tokens/${address}`, { timeout: 15000 });
+    const pairs = res.data?.pairs ?? [];
+    if (pairs.length === 0) throw new Error(`DexScreener: no pairs found for ${address}`);
+    
+    const pair = pairs[0]; // Take the top pair (usually highest liquidity)
+    return {
+      symbol: pair.baseToken?.symbol ?? address,
+      price: parseFloat(pair.priceUsd ?? '0'),
+      change24h: parseFloat(pair.priceChange?.h24 ?? '0'),
+      volume24h: parseFloat(pair.volume?.h24 ?? '0'),
+      marketCap: parseFloat(pair.marketCap ?? '0'),
+      high24h: 0,
+      low24h: 0,
       timestamp: Date.now(),
     };
   }

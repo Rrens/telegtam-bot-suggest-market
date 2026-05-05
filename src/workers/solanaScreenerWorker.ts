@@ -12,6 +12,7 @@ import { log } from '../utils/logger';
 import { Bot } from 'grammy';
 
 import { jobOrchestrator } from '../services/JobOrchestrator';
+import { GeminiService } from '../services/GeminiService';
 
 const QUEUE_NAME = 'solana-screener';
 const INTERVAL_MS = 15 * 60 * 1000; // Every 15 minutes
@@ -58,8 +59,24 @@ async function runSolanaScreener(bot: Bot): Promise<void> {
       const onCooldown = await SolanaScreenerService.isOnCooldown(token.address);
       if (onCooldown) continue;
 
-      const message = SolanaScreenerService.formatAlert(token);
-      await sendNotification(bot, 'system', message, { pin: false });
+      const alert = SolanaScreenerService.formatAlert(token);
+      let alertText = alert.text;
+      
+      // Add AI Analysis if enabled
+      try {
+        const aiAnalysis = await GeminiService.analyzeGem(token);
+        if (aiAnalysis) {
+          alertText += `\n\n${aiAnalysis}`;
+        }
+      } catch (err) {
+        log.warn('AI Analysis failed for gem', { symbol: token.symbol });
+      }
+
+      await bot.api.sendMessage(config.bot.channelId || '', alertText, {
+        parse_mode: 'HTML',
+        reply_markup: alert.reply_markup,
+        link_preview_options: { is_disabled: true }
+      });
 
       // Send CA as a separate copyable message right after the alert
       const caMessage = `📋 <b>CA ${token.symbol}:</b>\n<code>${token.address}</code>`;

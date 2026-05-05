@@ -8,6 +8,7 @@
 import axios from 'axios';
 import { redis } from '../cache/redis';
 import { log } from '../utils/logger';
+import { InlineKeyboard } from 'grammy';
 
 export interface SolanaToken {
   name: string;
@@ -183,9 +184,9 @@ export class SolanaScreenerService {
   }
 
   /**
-   * Format token data for Telegram message.
+   * Format token data for Telegram message with interactive buttons.
    */
-  static formatAlert(token: SolanaToken): string {
+  static formatAlert(token: SolanaToken): { text: string, reply_markup: InlineKeyboard } {
     const formatUsd = (n: number) => {
       if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
       if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
@@ -228,5 +229,13 @@ export class SolanaScreenerService {
       ``,
       `<i>⚠ Meme coin = high risk! DYOR. Tidak ada jaminan profit.</i>`
     ].filter(Boolean).join('\n');
+
+    const keyboard = new InlineKeyboard()
+      .text('🎮 Paper Buy $10', `pb_${token.address}`)
+      .text('📊 Show Chart', `cmd_chart_${token.address}`)
+      .row()
+      .url('🚀 Buy on Jupiter', jupiterUrl);
+
+    return { text: message, reply_markup: keyboard };
   }
 }
