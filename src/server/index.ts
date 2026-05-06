@@ -142,6 +142,7 @@ export function startWebServer() {
             symbol: a.symbol,
             amount: isIdr ? Math.round(parseFloat(a.amount as any)) : parseFloat(a.amount as any),
             avgPrice: parseFloat(a.avg_price),
+            currentPrice: price,
             currentValue: nativeCurrentValue,
             pnl: nativeCurrentValue - nativeCost,
             currency: isIdr ? 'Rp' : '$',
