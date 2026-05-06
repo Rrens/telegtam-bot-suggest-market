@@ -22,6 +22,7 @@ import { redis } from './cache/redis';
 import { PriceService } from './services/PriceService';
 import { startMarketWorker } from './workers/marketWorker';
 import { startWebServer } from './server/index';
+import { startMarketAlertWorker } from './workers/marketAlertWorker';
 
 async function bootstrap(): Promise<void> {
   log.info('Starting Advanced Trading Assistant Bot...');
@@ -56,6 +57,7 @@ async function bootstrap(): Promise<void> {
   startLpTrackerWorker(bot);       // 🔒 LP burn/lock tracker
   startDailySummaryWorker(bot);    // 📰 Daily AI market recap at 21:00 WIB
   startPaperExecutionWorker(bot);  // 🎮 TP/SL/Trailing Stop execution
+  startMarketAlertWorker(bot);     // 🚨 Auto-momentum alerts (5% or big thresholds)
 
   // 4.5 Start Web Dashboard Server
   startWebServer();
