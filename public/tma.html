@@ -216,9 +216,11 @@
                 let html = '';
                 if (data.assets.length === 0) html = '<div class="loading-text">No assets found.</div>';
                 data.assets.forEach(a => {
-                    const fmtAmount = a.type === 'stock' ? Math.round(a.amount) : parseFloat(a.amount).toFixed(a.amount < 1 ? 6 : 2);
+                    const isStock = a.type === 'stock';
+                    const fmtAmount = isStock ? Math.round(a.amount / 100) : parseFloat(a.amount).toFixed(a.amount < 1 ? 6 : 2);
+                    const unitLabel = isStock ? 'Lots' : 'Units';
                     html += `<div class="list-item" onclick="tab('charts'); loadChart('${a.currency==='Rp'?'IDX':'BINANCE'}', '${a.symbol}')">
-                        <div><div class="symbol">${a.symbol}</div><div class="sub">${fmtAmount} Units</div></div>
+                        <div><div class="symbol">${a.symbol}</div><div class="sub">${fmtAmount} ${unitLabel}</div></div>
                         <div style="text-align:right"><div class="symbol">${a.currency}${a.currentValue.toLocaleString()}</div><div class="${a.pnl>=0?'pos':'neg'}">${a.pnl>=0?'+':''}${a.pnl.toLocaleString()}</div></div>
                     </div>`;
                 });
@@ -361,11 +363,12 @@
                 } else {
                     data.positions.forEach(p => {
                         const isStock = p.symbol.endsWith('.JK') || p.symbol.endsWith('.ID');
-                        const fmtAmount = isStock ? Math.round(p.amount) : p.amount.toFixed(p.amount < 1 ? 6 : 2);
+                        const fmtAmount = isStock ? Math.round(p.amount / 100) : p.amount.toFixed(p.amount < 1 ? 6 : 2);
+                        const unitLabel = isStock ? 'Lots' : 'Units';
                         html += `<div class="list-item">
                             <div>
                                 <div class="symbol">${p.symbol}</div>
-                                <div class="sub">Avg: $${p.avg_price.toLocaleString()} | ${fmtAmount} Units</div>
+                                <div class="sub">Avg: $${p.avg_price.toLocaleString()} | ${fmtAmount} ${unitLabel}</div>
                                 <div style="font-size: 0.6rem; color: var(--accent); margin-top: 4px;">
                                     ${p.tp_price ? `🎯 TP: $${p.tp_price} ` : ''}
                                     ${p.sl_price ? `🛡️ SL: $${p.sl_price} ` : ''}
