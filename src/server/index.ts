@@ -144,7 +144,8 @@ export function startWebServer() {
             avgPrice: parseFloat(a.avg_price),
             currentValue: nativeCurrentValue,
             pnl: nativeCurrentValue - nativeCost,
-            currency: isIdr ? 'Rp' : '$'
+            currency: isIdr ? 'Rp' : '$',
+            type: isIdr ? 'stock' : 'crypto'
           };
         } catch (e) {
           const isIdr = a.symbol.endsWith('.JK') || a.symbol.endsWith('.ID');
@@ -154,7 +155,8 @@ export function startWebServer() {
             avgPrice: parseFloat(a.avg_price),
             currentValue: 0,
             pnl: 0,
-            currency: isIdr ? 'Rp' : '$'
+            currency: isIdr ? 'Rp' : '$',
+            type: isIdr ? 'stock' : 'crypto'
           };
         }
       }));
@@ -370,12 +372,13 @@ export function startWebServer() {
         }
       }));
 
+      const balance = parseFloat(user?.paper_balance || '0');
       res.json({
-        balance: parseFloat(user?.paper_balance || '0'),
+        balance: isNaN(balance) ? 0 : balance,
         positions: formattedPositions.map(p => ({
           ...p,
-          amount: parseFloat(p.amount),
-          avg_price: parseFloat(p.avg_price)
+          amount: parseFloat(p.amount) || 0,
+          avg_price: parseFloat(p.avg_price) || 0
         }))
       });
     } catch (err) { res.status(500).json({ error: 'Failed to load paper portfolio' }); }
