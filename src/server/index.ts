@@ -140,7 +140,7 @@ export function startWebServer() {
           
           return {
             symbol: a.symbol,
-            amount: a.amount,
+            amount: isIdr ? Math.round(parseFloat(a.amount as any)) : parseFloat(a.amount as any),
             avgPrice: parseFloat(a.avg_price),
             currentValue: nativeCurrentValue,
             pnl: nativeCurrentValue - nativeCost,
@@ -151,7 +151,7 @@ export function startWebServer() {
           const isIdr = a.symbol.endsWith('.JK') || a.symbol.endsWith('.ID');
           return {
             symbol: a.symbol,
-            amount: a.amount,
+            amount: isIdr ? Math.round(parseFloat(a.amount as any)) : parseFloat(a.amount as any),
             avgPrice: parseFloat(a.avg_price),
             currentValue: 0,
             pnl: 0,
