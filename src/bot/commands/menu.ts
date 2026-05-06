@@ -9,9 +9,11 @@ import { handleSentiment } from './sentiment';
 import { handleSolana } from './solana';
 import { handleSmartMoney } from './smartmoney';
 import { handleWatchlist } from './watchlist';
-import { handleAlertRsi } from './alertrsi';
-import { handleApp } from './app';
 import { handleCheck } from './check';
+import { handleAlert, handleAlertCallbacks } from './alert';
+import { handleAlertRsi, handleAlertRsiCallbacks } from './alertrsi';
+import { handlePaperStatus, handlePaperCallbacks } from './paper';
+import { handleApp } from './app';
 import { config } from '../../config';
 
 export async function handleMenu(ctx: Context): Promise<void> {
@@ -89,9 +91,11 @@ export async function handleMenuCallbacks(ctx: Context): Promise<void> {
 
   if (data === 'cat_alerts') {
     const kb = new InlineKeyboard()
-      .text('📊 RSI/MA Alert Setup', 'cmd_alertrsi')
+      .text('🔔 Price Alert Setup', 'cmd_alert')
+      .text('📊 RSI/MA Alert Setup', 'cmd_alertrsi').row()
+      .text('🎮 Paper Trading', 'cmd_paper_status').row()
       .text('⬅️ Back', 'back_to_menu');
-    await ctx.editMessageText(`📊 <b>Technical Alerts</b>`, { parse_mode: 'HTML', reply_markup: kb });
+    await ctx.editMessageText(`📊 <b>Technical Alerts & Tools</b>`, { parse_mode: 'HTML', reply_markup: kb });
     return;
   }
 
@@ -101,11 +105,17 @@ export async function handleMenuCallbacks(ctx: Context): Promise<void> {
   if (data === 'cmd_solana') { await ctx.answerCallbackQuery(); await handleSolana(ctx as any); return; }
   if (data === 'cmd_smartmoney') { await ctx.answerCallbackQuery(); await handleSmartMoney(ctx as any); return; }
   if (data === 'cmd_watchlist') { await ctx.answerCallbackQuery(); await handleWatchlist(ctx as any); return; }
+  if (data === 'cmd_alert') { await ctx.answerCallbackQuery(); await handleAlert(ctx as any); return; }
   if (data === 'cmd_alertrsi') { await ctx.answerCallbackQuery(); await handleAlertRsi(ctx as any); return; }
+  if (data === 'cmd_paper_status') { await ctx.answerCallbackQuery(); await handlePaperStatus(ctx as any); return; }
   if (data === 'cmd_app') { await ctx.answerCallbackQuery(); await handleApp(ctx as any); return; }
   if (data === 'cmd_help') { await ctx.answerCallbackQuery(); await handleHelp(ctx as any); return; }
   
   // Specific Prompts
+  if (data.startsWith('arsi_')) { await handleAlertRsiCallbacks(ctx); return; }
+  if (data.startsWith('al_')) { await handleAlertCallbacks(ctx); return; }
+  if (data.startsWith('p_')) { await handlePaperCallbacks(ctx); return; }
+
   if (data === 'cmd_check_prompt') {
     await ctx.answerCallbackQuery();
     await ctx.reply('🛡️ Silakan kirim alamat kontrak (CA) Solana yang mau di-scan:\nContoh: <code>/check [CA]</code>', { parse_mode: 'HTML' });

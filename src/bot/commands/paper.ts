@@ -42,6 +42,11 @@ export async function handlePaperStatus(ctx: CommandContext<Context>): Promise<v
       }
     }
 
+    const inlineKb = new InlineKeyboard()
+      .text('🎮 Paper Buy', 'p_buy_start')
+      .text('💰 Paper Sell', 'p_sell_start').row()
+      .text('🔄 Refresh', 'p_refresh_status');
+
     const totalPnl = totalValue - 10000;
     const totalPnlPct = (totalPnl / 10000) * 100;
 
@@ -54,14 +59,45 @@ export async function handlePaperStatus(ctx: CommandContext<Context>): Promise<v
 
 <b>Positions:</b>
 ${posText}
-
-<i>Gunakan /paperbuy [simbol] [jumlah_usd] dan /papersell [simbol] [jumlah_aset]</i>
     `.trim();
 
-    await ctx.reply(msg, { parse_mode: 'HTML' });
+    if (ctx.callbackQuery) {
+      await (ctx as any).editMessageText(msg, { parse_mode: 'HTML', reply_markup: inlineKb });
+    } else {
+      await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: inlineKb });
+    }
   } catch (err) {
     log.error('Paper status failed', { error: (err as Error).message });
-    await ctx.reply('Terjadi kesalahan saat memuat portfolio paper trading.');
+    await ctx.reply('❌ Gagal mengambil data portfolio.');
+  }
+}
+
+export async function handlePaperCallbacks(ctx: Context): Promise<void> {
+  const data = ctx.callbackQuery?.data;
+  if (!data) return;
+
+  if (data === 'p_refresh_status') {
+    await ctx.answerCallbackQuery();
+    await handlePaperStatus(ctx as any);
+    return;
+  }
+
+  if (data === 'p_buy_start') {
+    await ctx.answerCallbackQuery();
+    await ctx.reply('🔍 <b>Paper Buy</b>\nKetik Simbol dan Jumlah USD:\nContoh: <code>BTCUSDT 100</code>', { 
+      parse_mode: 'HTML',
+      reply_markup: { force_reply: true }
+    });
+    return;
+  }
+
+  if (data === 'p_sell_start') {
+    await ctx.answerCallbackQuery();
+    await ctx.reply('💰 <b>Paper Sell</b>\nKetik Simbol dan Jumlah Aset:\nContoh: <code>BTCUSDT 0.1</code>', { 
+      parse_mode: 'HTML',
+      reply_markup: { force_reply: true }
+    });
+    return;
   }
 }
 

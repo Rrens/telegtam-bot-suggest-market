@@ -63,6 +63,9 @@ export function createBot(): Bot {
     if (data.startsWith('cat_') || 
         data.startsWith('cmd_') || 
         data.startsWith('exec_') || 
+        data.startsWith('arsi_') || 
+        data.startsWith('al_') || 
+        data.startsWith('p_') || 
         data === 'back_to_menu') {
       
       if (data.startsWith('exec_smartmoney')) return handleSmartMoney(ctx);
