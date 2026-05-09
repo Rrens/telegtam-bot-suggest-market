@@ -1,3 +1,4 @@
+import { Context, CommandContext } from 'grammy';
 import { NewsService } from '../../services/NewsService';
 import { formatNews } from '../../utils/formatter';
 import { isFeatureEnabled } from '../middleware/featureFlag';

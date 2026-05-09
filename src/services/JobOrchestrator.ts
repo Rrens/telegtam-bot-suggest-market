@@ -45,7 +45,7 @@ class JobOrchestrator {
       
       // Try to find the next repeat run
       const repeatableJobs = await queue.getRepeatableJobs();
-      const nextRun = repeatableJobs.length > 0 
+      const nextRun = (repeatableJobs.length > 0 && repeatableJobs[0].next !== undefined)
         ? new Date(repeatableJobs[0].next).toLocaleString('id-ID')
         : 'Manual Only';
 

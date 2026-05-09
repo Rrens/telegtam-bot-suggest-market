@@ -51,18 +51,18 @@ async function bootstrap(): Promise<void> {
   // 4. Start background workers
   startPriceWorker();
   
-  if (config.features.news) startNewsWorker(bot);
-  if (config.features.alerts) startAlertWorker(bot);
-  if (config.features.signals) startSignalWorker();
-  if (config.features.marketScan) startMarketWorker(bot);
-  if (config.features.solanaScreener) startSolanaScreenerWorker(bot); // 🚀 Solana meme coin gem screener
-  if (config.features.whaleTracker) startWhaleWorker(bot);           // 🐋 Whale movements tracker
-  if (config.features.smartMoney) startSmartMoneyWorker(bot);      // 🧠 Smart money wallet tracker
-  if (config.features.pumpFun) startPumpFunWorker(bot);         // 🎓 Pump.fun graduation alerts
-  if (config.features.lpTracker) startLpTrackerWorker(bot);       // 🔒 LP burn/lock tracker
-  if (config.features.dailySummary) startDailySummaryWorker(bot);    // 📰 Daily AI market recap at 21:00 WIB
-  if (config.features.paperTrading) startPaperExecutionWorker(bot);  // 🎮 TP/SL/Trailing Stop execution
-  if (config.features.marketAlerts) startMarketAlertWorker(bot);     // 🚨 Auto-momentum alerts (5% or big thresholds)
+  if (await featureFlagService.isEnabled('news')) startNewsWorker(bot);
+  if (await featureFlagService.isEnabled('alerts')) startAlertWorker(bot);
+  if (await featureFlagService.isEnabled('signals')) startSignalWorker();
+  if (await featureFlagService.isEnabled('marketScan')) startMarketWorker(bot);
+  if (await featureFlagService.isEnabled('solanaScreener')) startSolanaScreenerWorker(bot); // 🚀 Solana meme coin gem screener
+  if (await featureFlagService.isEnabled('whaleTracker')) startWhaleWorker(bot);           // 🐋 Whale movements tracker
+  if (await featureFlagService.isEnabled('smartMoney')) startSmartMoneyWorker(bot);      // 🧠 Smart money wallet tracker
+  if (await featureFlagService.isEnabled('pumpFun')) startPumpFunWorker(bot);         // 🎓 Pump.fun graduation alerts
+  if (await featureFlagService.isEnabled('lpTracker')) startLpTrackerWorker(bot);       // 🔒 LP burn/lock tracker
+  if (await featureFlagService.isEnabled('dailySummary')) startDailySummaryWorker(bot);    // 📰 Daily AI market recap at 21:00 WIB
+  if (await featureFlagService.isEnabled('paperTrading')) startPaperExecutionWorker(bot);  // 🎮 TP/SL/Trailing Stop execution
+  if (await featureFlagService.isEnabled('marketAlerts')) startMarketAlertWorker(bot);     // 🚨 Auto-momentum alerts (5% or big thresholds)
 
   // 4.5 Start Web Dashboard Server
   startWebServer();
