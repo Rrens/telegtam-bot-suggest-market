@@ -15,8 +15,8 @@ export function startWebServer() {
 
   // Security Middleware for API (Dashboard only)
   app.use('/api', (req, res, next) => {
-    // Skip security check for TMA (Mini App) endpoints
-    if (req.path.startsWith('/tma')) {
+    // Skip security check for TMA and Admin endpoints (they have their own ID checks)
+    if (req.path.startsWith('/tma') || req.path.startsWith('/admin')) {
       return next();
     }
     
