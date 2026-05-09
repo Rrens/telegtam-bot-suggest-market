@@ -78,6 +78,7 @@
         <div class="card">
             <div style="font-weight: 800; margin-bottom: 10px;">Assets</div>
             <div id="home-assets">Tap 🔄 to load assets.</div>
+            <div id="debug-info" style="font-size: 0.6rem; color: var(--hint); margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 5px; text-align: center;"></div>
         </div>
     </div>
 
@@ -277,6 +278,7 @@
         }
 
         // Init load
+        document.getElementById('debug-info').innerText = `User ID: ${userId}`;
         checkAdmin();
         loadHome();
         renderChart(curSymbol);
