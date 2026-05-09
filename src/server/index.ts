@@ -424,12 +424,43 @@ export function startWebServer() {
             });
           }
         }
-        // Additional types like SELL could be added here
       });
 
       res.json({ success: true, price: currentPrice, amount });
     } catch (err) { 
       res.status(500).json({ error: (err as Error).message }); 
+    }
+  });
+
+  // --- ADMIN FEATURE FLAGS ---
+  
+  app.get('/api/admin/features', async (req, res) => {
+    const { user_id } = req.query;
+    if (!user_id || user_id.toString() !== config.bot.adminId) {
+      return res.status(401).json({ error: 'Unauthorized: Admin only' });
+    }
+    
+    try {
+      const { featureFlagService } = require('../services/FeatureFlagService');
+      const flags = await featureFlagService.getAllFlags();
+      res.json(flags);
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to fetch features' });
+    }
+  });
+
+  app.post('/api/admin/features/toggle', async (req, res) => {
+    const { user_id, key, enabled } = req.body;
+    if (!user_id || user_id.toString() !== config.bot.adminId) {
+      return res.status(401).json({ error: 'Unauthorized: Admin only' });
+    }
+    
+    try {
+      const { featureFlagService } = require('../services/FeatureFlagService');
+      await featureFlagService.updateFlag(key, enabled);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to update feature' });
     }
   });
 

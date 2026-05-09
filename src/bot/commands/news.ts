@@ -1,9 +1,11 @@
-import { CommandContext, Context } from 'grammy';
 import { NewsService } from '../../services/NewsService';
 import { formatNews } from '../../utils/formatter';
+import { isFeatureEnabled } from '../middleware/featureFlag';
 
 // Usage: /news <symbol>
 export async function handleNews(ctx: CommandContext<Context>): Promise<void> {
+  if (!await isFeatureEnabled(ctx, 'news')) return;
+
   const symbol = ctx.match?.trim().toUpperCase();
 
   if (!symbol) {

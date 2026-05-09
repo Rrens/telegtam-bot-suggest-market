@@ -45,7 +45,7 @@ class JobOrchestrator {
       
       // Try to find the next repeat run
       const repeatableJobs = await queue.getRepeatableJobs();
-      const nextRun = (repeatableJobs.length > 0 && repeatableJobs[0].next)
+      const nextRun = repeatableJobs.length > 0 
         ? new Date(repeatableJobs[0].next).toLocaleString('id-ID')
         : 'Manual Only';
 
@@ -66,7 +66,7 @@ class JobOrchestrator {
   /**
    * Manually trigger a job in a queue
    */
-  async triggerJob(name: string, data: any = {}): Promise<Job | null> {
+  async triggerJob(name: string, data: any = {}): Promise<Job | null> { 
     const queue = this.queues.get(name);
     if (!queue) {
       log.warn(`JobOrchestrator: Trigger failed, queue [${name}] not found`);

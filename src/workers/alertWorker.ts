@@ -12,6 +12,7 @@ import { Bot } from 'grammy';
 import { formatNews } from '../utils/formatter';
 import { sendNotification } from '../utils/notifier';
 import { jobOrchestrator } from '../services/JobOrchestrator';
+import { featureFlagService } from '../services/FeatureFlagService';
 
 const ALERT_QUEUE = 'alert-check';
 const NEWS_ALERT_QUEUE = 'news-alert-check';
@@ -24,6 +25,10 @@ export function startAlertWorker(bot: Bot): void {
   const alertWorker = new Worker(
     ALERT_QUEUE,
     async () => {
+      if (!await featureFlagService.isEnabled('alerts')) {
+        log.debug('Skipping alertWorker: feature disabled');
+        return;
+      }
       await AlertService.checkAllAlerts();
     },
     { connection: redis, concurrency: 1 }
@@ -66,6 +71,8 @@ export function startAlertWorker(bot: Bot): void {
  * Check news alerts and dispatch notifications with cooldown enforcement.
  */
 async function checkNewsAlerts(bot: Bot): Promise<void> {
+  if (!await featureFlagService.isEnabled('news')) return;
+
   const subscriptions = await AlertService.getActiveNewsAlerts();
   const cooldownMs = config.intervals.newsAlertCooldownMs;
 

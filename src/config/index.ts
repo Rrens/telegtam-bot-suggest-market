@@ -64,4 +64,18 @@ export const config = {
       .map((id) => id.trim())
       .filter(Boolean),
   },
+  features: {
+    news: optional('FEATURE_NEWS', 'true') === 'true',
+    alerts: optional('FEATURE_ALERTS', 'true') === 'true',
+    signals: optional('FEATURE_SIGNALS', 'true') === 'true',
+    marketScan: optional('FEATURE_MARKET_SCAN', 'true') === 'true',
+    solanaScreener: optional('FEATURE_SOLANA_SCREENER', 'true') === 'true',
+    whaleTracker: optional('FEATURE_WHALE_TRACKER', 'true') === 'true',
+    smartMoney: optional('FEATURE_SMART_MONEY', 'true') === 'true',
+    pumpFun: optional('FEATURE_PUMP_FUN', 'true') === 'true',
+    lpTracker: optional('FEATURE_LP_TRACKER', 'true') === 'true',
+    dailySummary: optional('FEATURE_DAILY_SUMMARY', 'true') === 'true',
+    paperTrading: optional('FEATURE_PAPER_TRADING', 'true') === 'true',
+    marketAlerts: optional('FEATURE_MARKET_ALERTS', 'true') === 'true',
+  },
 };

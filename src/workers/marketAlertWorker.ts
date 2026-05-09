@@ -8,6 +8,7 @@ import { log } from '../utils/logger';
 import { Bot } from 'grammy';
 import { jobOrchestrator } from '../services/JobOrchestrator';
 import { DynamicMarketAlertService } from '../services/DynamicMarketAlertService';
+import { featureFlagService } from '../services/FeatureFlagService';
 
 const QUEUE_NAME = 'market-alert';
 const INTERVAL_MS = 5 * 60 * 1000; // Every 5 minutes
@@ -20,6 +21,10 @@ export function startMarketAlertWorker(bot: Bot): void {
   const worker = new Worker(
     QUEUE_NAME,
     async () => {
+      if (!await featureFlagService.isEnabled('marketAlerts')) {
+        log.debug('Skipping marketAlertWorker: feature disabled');
+        return;
+      }
       await DynamicMarketAlertService.checkDynamicAlerts();
     },
     { connection: redis, concurrency: 1 }

@@ -23,6 +23,7 @@ import { PriceService } from './services/PriceService';
 import { startMarketWorker } from './workers/marketWorker';
 import { startWebServer } from './server/index';
 import { startMarketAlertWorker } from './workers/marketAlertWorker';
+import { featureFlagService } from './services/FeatureFlagService';
 
 async function bootstrap(): Promise<void> {
   log.info('Starting Advanced Trading Assistant Bot...');
@@ -32,6 +33,9 @@ async function bootstrap(): Promise<void> {
 
   // 1. Connect to database
   await connectDb();
+
+  // 1.5 Initialize Dynamic Feature Flags
+  await featureFlagService.init();
 
   // 2. Run pending migrations automatically
   await db.migrate.latest().then(() => {
@@ -46,18 +50,19 @@ async function bootstrap(): Promise<void> {
 
   // 4. Start background workers
   startPriceWorker();
-  startNewsWorker(bot);
-  startAlertWorker(bot);
-  startSignalWorker();
-  startMarketWorker(bot);
-  startSolanaScreenerWorker(bot); // 🚀 Solana meme coin gem screener
-  startWhaleWorker(bot);           // 🐋 Whale movements tracker
-  startSmartMoneyWorker(bot);      // 🧠 Smart money wallet tracker
-  startPumpFunWorker(bot);         // 🎓 Pump.fun graduation alerts
-  startLpTrackerWorker(bot);       // 🔒 LP burn/lock tracker
-  startDailySummaryWorker(bot);    // 📰 Daily AI market recap at 21:00 WIB
-  startPaperExecutionWorker(bot);  // 🎮 TP/SL/Trailing Stop execution
-  startMarketAlertWorker(bot);     // 🚨 Auto-momentum alerts (5% or big thresholds)
+  
+  if (config.features.news) startNewsWorker(bot);
+  if (config.features.alerts) startAlertWorker(bot);
+  if (config.features.signals) startSignalWorker();
+  if (config.features.marketScan) startMarketWorker(bot);
+  if (config.features.solanaScreener) startSolanaScreenerWorker(bot); // 🚀 Solana meme coin gem screener
+  if (config.features.whaleTracker) startWhaleWorker(bot);           // 🐋 Whale movements tracker
+  if (config.features.smartMoney) startSmartMoneyWorker(bot);      // 🧠 Smart money wallet tracker
+  if (config.features.pumpFun) startPumpFunWorker(bot);         // 🎓 Pump.fun graduation alerts
+  if (config.features.lpTracker) startLpTrackerWorker(bot);       // 🔒 LP burn/lock tracker
+  if (config.features.dailySummary) startDailySummaryWorker(bot);    // 📰 Daily AI market recap at 21:00 WIB
+  if (config.features.paperTrading) startPaperExecutionWorker(bot);  // 🎮 TP/SL/Trailing Stop execution
+  if (config.features.marketAlerts) startMarketAlertWorker(bot);     // 🚨 Auto-momentum alerts (5% or big thresholds)
 
   // 4.5 Start Web Dashboard Server
   startWebServer();

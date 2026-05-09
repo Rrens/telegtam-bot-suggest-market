@@ -4,8 +4,11 @@
 
 import { CommandContext, Context, InlineKeyboard } from 'grammy';
 import { SolanaScreenerService } from '../../services/SolanaScreenerService';
+import { isFeatureEnabled } from '../middleware/featureFlag';
 
 export async function handleSolana(ctx: CommandContext<Context> | Context): Promise<void> {
+  if (!await isFeatureEnabled(ctx, 'solanaScreener')) return;
+
   // Jika dipicu oleh callback
   if (ctx.callbackQuery?.data === 'exec_solana_scan') {
     await ctx.answerCallbackQuery('🔍 Scanning Solana Network...');

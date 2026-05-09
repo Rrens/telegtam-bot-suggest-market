@@ -184,7 +184,32 @@
         <div class="nav-item" onclick="tab('scanner')"><span class="nav-icon">💎</span><span>Scan</span></div>
         <div class="nav-item" onclick="tab('trade')"><span class="nav-icon">🚀</span><span>Trade</span></div>
         <div class="nav-item" onclick="tab('alerts')"><span class="nav-icon">🔔</span><span>Alert</span></div>
+        <div id="admin-nav" class="nav-item" style="display: none;" onclick="tab('admin')"><span class="nav-icon">⚙️</span><span>Admin</span></div>
     </nav>
+
+    <!-- 8. ADMIN (Feature Flags) -->
+    <div id="view-admin" class="view">
+        <h1>Admin Control</h1>
+        <div class="card">
+            <div style="font-weight: 800; margin-bottom: 15px;">🚀 Feature Flags</div>
+            <div id="admin-features">Loading flags...</div>
+        </div>
+    </div>
+
+    <style>
+        /* Toggle Switch Style */
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(20px); }
+        
+        .feature-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .feature-info { flex: 1; margin-right: 15px; }
+        .feature-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 2px; }
+        .feature-desc { font-size: 0.7rem; color: var(--hint); }
+    </style>
 
     <script>
         const tg = window.Telegram.WebApp;
@@ -197,14 +222,65 @@
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
             document.getElementById(`view-${id}`).classList.add('active');
-            const idx = ['home', 'charts', 'intel', 'scanner', 'trade', 'alerts'].indexOf(id);
-            document.querySelectorAll('.nav-item')[idx].classList.add('active');
+            const idx = ['home', 'charts', 'intel', 'scanner', 'trade', 'alerts', 'admin'].indexOf(id);
+            if (idx !== -1) document.querySelectorAll('.nav-item')[idx].classList.add('active');
             
             if (id === 'home' && document.getElementById('home-assets').innerText.includes('Tap')) loadHome();
             if (id === 'charts') renderChart(curSymbol);
             if (id === 'trade') loadPaperTrade();
-            if (id === 'alerts') loadAlerts(); // Auto-load alerts when tab is opened
+            if (id === 'alerts') loadAlerts();
+            if (id === 'admin') loadFeatures();
         }
+
+        async function checkAdmin() {
+            try {
+                const res = await fetch(`/api/admin/features?user_id=${userId}`);
+                if (res.ok) {
+                    document.getElementById('admin-nav').style.display = 'flex';
+                }
+            } catch (e) {}
+        }
+
+        async function loadFeatures() {
+            const container = document.getElementById('admin-features');
+            container.innerHTML = '<div class="loading-text">Loading flags...</div>';
+            try {
+                const res = await fetch(`/api/admin/features?user_id=${userId}`);
+                const flags = await res.json();
+                let html = '';
+                flags.forEach(f => {
+                    html += `
+                        <div class="feature-item">
+                            <div class="feature-info">
+                                <div class="feature-name">${f.key}</div>
+                                <div class="feature-desc">${f.description || 'No description'}</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" ${f.enabled ? 'checked' : ''} onchange="toggleFeature('${f.key}', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (e) { container.innerHTML = 'Failed to load features.'; }
+        }
+
+        async function toggleFeature(key, enabled) {
+            try {
+                await fetch('/api/admin/features/toggle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, key, enabled })
+                });
+            } catch (e) { tg.showAlert('Failed to update feature.'); }
+        }
+
+        // Init load
+        checkAdmin();
+        loadHome();
+        renderChart(curSymbol);
+        loadInsight('BTCUSDT');
 
         async function loadHome() {
             document.getElementById('home-assets').innerHTML = '<div class="loading-text">Loading portfolio...</div>';
