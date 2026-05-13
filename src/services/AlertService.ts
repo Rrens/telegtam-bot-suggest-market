@@ -225,21 +225,44 @@ export class AlertService {
 
       if (alert.alert_type === 'price_target') {
         const target = parseFloat(alert.target_value.toString());
-        if (alert.condition === 'gte' && currentPrice >= target) {
+        const isUp = currentPrice >= target;
+        const trendIcon = isUp ? '🟢' : '🔴';
+        const event = isUp ? 'MELAMPAUI' : 'TURUN DI BAWAH';
+        
+        if ((alert.condition === 'gte' && currentPrice >= target) || (alert.condition === 'lte' && currentPrice <= target)) {
           triggered = true;
-          message = `🔔 <b>Price Alert Triggered</b>\n\n${symbol} reached ${formatPrice(currentPrice)} (target: ${formatPrice(target)})`;
-        } else if (alert.condition === 'lte' && currentPrice <= target) {
-          triggered = true;
-          message = `🔔 <b>Price Alert Triggered</b>\n\n${symbol} dropped to ${formatPrice(currentPrice)} (target: ${formatPrice(target)})`;
+          message = [
+            `🔔 <b>PRICE ALERT TRIGGERED</b> 🔔`,
+            `━━━━━━━━━━━━━━━━━━━━`,
+            `<b>Asset:</b> ${symbol}`,
+            `<b>Event:</b> Harga <b>${event}</b> target!`,
+            `━━━━━━━━━━━━━━━━━━━━`,
+            `💰 Harga Sekarang: <b>${formatPrice(currentPrice)}</b>`,
+            `🎯 Harga Target: <b>${formatPrice(target)}</b>`,
+            ``,
+            `<i>Ketik /predict ${symbol} untuk analisis lengkap.</i>`,
+          ].join('\n');
         }
       } else if (alert.alert_type === 'pct_change') {
         const targetPct = parseFloat(alert.target_value.toString());
-        if (alert.condition === 'gte' && change24h >= targetPct) {
+        const isUp = change24h >= 0;
+        const trendIcon = isUp ? '🚀' : '📉';
+        const direction = isUp ? 'NAIK' : 'TURUN';
+        
+        if ((alert.condition === 'gte' && change24h >= targetPct) || (alert.condition === 'lte' && change24h <= targetPct)) {
           triggered = true;
-          message = `🔔 <b>% Change Alert</b>\n\n${symbol} is up ${formatPct(change24h)} in 24h (threshold: ${formatPct(targetPct)})`;
-        } else if (alert.condition === 'lte' && change24h <= targetPct) {
-          triggered = true;
-          message = `🔔 <b>% Change Alert</b>\n\n${symbol} is down ${formatPct(change24h)} in 24h (threshold: ${formatPct(targetPct)})`;
+          message = [
+            `🔔 <b>% CHANGE ALERT</b> 🔔`,
+            `━━━━━━━━━━━━━━━━━━━━`,
+            `<b>Asset:</b> ${symbol}`,
+            `<b>Event:</b> Pergerakan <b>${direction}</b> signifikan!`,
+            `━━━━━━━━━━━━━━━━━━━━`,
+            `💰 Harga Sekarang: <b>${formatPrice(currentPrice)}</b>`,
+            `📊 Perubahan 24j: <b>${formatPct(change24h)}</b>`,
+            `🎯 Threshold: ${formatPct(targetPct)}`,
+            ``,
+            `<i>Ketik /predict ${symbol} untuk analisis lengkap.</i>`,
+          ].join('\n');
         }
       }
 

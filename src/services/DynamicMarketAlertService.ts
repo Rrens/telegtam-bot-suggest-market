@@ -67,13 +67,15 @@ export class DynamicMarketAlertService {
     let alertTriggered = false;
     let reason = '';
     let emoji = '⚡';
+    const isUp = price > lastPrice;
 
     // 2. Check for Percentage Threshold (5%)
     const pctDiff = Math.abs((price - lastPrice) / lastPrice) * 100;
     if (pctDiff >= 5) {
       alertTriggered = true;
-      reason = `Pergerakan drastis <b>${pctDiff.toFixed(1)}%</b> sejak update terakhir!`;
-      emoji = price > lastPrice ? '🚀' : '📉';
+      const direction = isUp ? 'NAIK' : 'TURUN';
+      reason = `Pergerakan <b>${direction}</b> drastis <b>${pctDiff.toFixed(1)}%</b> sejak update terakhir!`;
+      emoji = isUp ? '🚀' : '📉';
     }
 
     // 3. Check for Psychological Thresholds (Crossing big numbers)
@@ -85,16 +87,16 @@ export class DynamicMarketAlertService {
         
         if (currentStep !== lastStep) {
           alertTriggered = true;
-          const direction = currentStep > lastStep ? 'naik melampaui' : 'turun di bawah';
+          const direction = currentStep > lastStep ? 'NAIK melampaui' : 'TURUN di bawah';
           const level = currentStep > lastStep ? currentStep * threshold : lastStep * threshold;
-          reason = `Harga ${direction} level psikologis <b>${formatPrice(level)}</b>`;
+          reason = `Harga <b>${direction}</b> level psikologis <b>${formatPrice(level)}</b>`;
           emoji = currentStep > lastStep ? '🔥' : '⚠️';
         }
       }
     }
 
     if (alertTriggered) {
-      await this.dispatchAlert(symbol, price, change24h, reason, emoji);
+      await this.dispatchAlert(symbol, price, lastPrice, change24h, reason, emoji);
       // Update last price in redis to prevent double alerts
       await redis.set(lastPriceKey, price);
     }
@@ -118,15 +120,20 @@ export class DynamicMarketAlertService {
   /**
    * Sends the alert to appropriate recipients.
    */
-  private static async dispatchAlert(symbol: string, price: number, change24h: number, reason: string, emoji: string): Promise<void> {
+  private static async dispatchAlert(symbol: string, price: number, lastPrice: number, change24h: number, reason: string, emoji: string): Promise<void> {
     if (!this.bot) return;
 
     const isTopAsset = TOP_CRYPTO.includes(symbol) || TOP_STOCKS.includes(symbol);
+    const isUp = price > lastPrice;
+    const trendIcon = isUp ? '🟢' : '🔴';
+    const trendText = isUp ? 'BULLISH MOMENTUM' : 'BEARISH MOMENTUM';
+
     const message = [
       `${emoji} <b>MARKET MOMENTUM: ${symbol}</b> ${emoji}`,
-      ``,
-      reason,
-      ``,
+      `━━━━━━━━━━━━━━━━━━━━`,
+      `<b>Status:</b> ${trendIcon} ${trendText}`,
+      `<b>Info:</b> ${reason}`,
+      `━━━━━━━━━━━━━━━━━━━━`,
       `💰 Harga Saat Ini: <b>${formatPrice(price)}</b>`,
       `📊 Perubahan 24h: <b>${formatPct(change24h)}</b>`,
       ``,
@@ -142,11 +149,21 @@ export class DynamicMarketAlertService {
     const owners = await db('assets').where({ symbol }).select('user_id').distinct();
     for (const owner of owners) {
       try {
-        // Avoid double notification if already sent via broadcast (optional check)
-        await this.bot.api.sendMessage(owner.user_id, `🎯 <b>Portfolio Alert: ${symbol}</b>\n\n${reason}\nHarga: ${formatPrice(price)}`, { parse_mode: 'HTML' });
+        const portfolioMsg = [
+          `🎯 <b>Portfolio Alert: ${symbol}</b>`,
+          `━━━━━━━━━━━━━━━━━━━━`,
+          `${trendIcon} ${reason}`,
+          `💰 Harga: <b>${formatPrice(price)}</b>`,
+          `📉 Prev: ${formatPrice(lastPrice)}`,
+          `━━━━━━━━━━━━━━━━━━━━`,
+          `<i>Check your portfolio for details.</i>`
+        ].join('\n');
+        
+        await this.bot.api.sendMessage(owner.user_id, portfolioMsg, { parse_mode: 'HTML' });
       } catch (err) {
         // User might have blocked the bot
       }
     }
   }
+}
 }
