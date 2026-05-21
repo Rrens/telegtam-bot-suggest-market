@@ -15,9 +15,30 @@ import { handleAlertRsi, handleAlertRsiCallbacks } from './alertrsi';
 import { handlePaperStatus, handlePaperCallbacks } from './paper';
 import { handleApp } from './app';
 import { config } from '../../config';
+import { db } from '../../db';
+import { log } from '../../utils/logger';
 
 export async function handleMenu(ctx: Context): Promise<void> {
   const isStart = !ctx.callbackQuery && ctx.message?.text?.startsWith('/start');
+  
+  if (isStart && ctx.from) {
+    try {
+      await db('users')
+        .insert({
+          id: ctx.from.id.toString(),
+          username: ctx.from.username ?? null,
+          risk_profile: 'moderate',
+          preferred_timeframe: 'swing',
+        })
+        .onConflict('id')
+        .merge({ username: ctx.from.username ?? null });
+
+      log.info('User registered/updated via /start', { userId: ctx.from.id, username: ctx.from.username });
+    } catch (err) {
+      log.error('Failed to upsert user on /start', { error: (err as Error).message });
+    }
+  }
+
   const me = await ctx.api.getMe();
   const botName = me.first_name;
   

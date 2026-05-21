@@ -47,15 +47,43 @@ export function createBot(): Bot {
   bot.use(rateLimiter());
 
   // ── Commands ────────────────────────────────────────────────────────────────
-  // Hanya simpan command utama, sisanya lewat /start (Dashboard)
   bot.command('start', handleMenu);
   bot.command('app', handleApp);
   bot.command('menu', handleMenu);
   bot.command('help', handleHelp);
-  bot.command('check', handleCheck); // Tetap ada buat quick scan
+  bot.command('check', handleCheck);
   bot.command('scheduler', handleScheduler);
   bot.command('broadcast', handleBroadcast);
   bot.command('admin', handleAdmin);
+
+  // Additional Slash Commands
+  bot.command('add', handleAdd);
+  bot.command('list', handleList);
+  bot.command('delete', handleDelete);
+  bot.command('portfolio', handlePortfolio);
+  bot.command('portofolio', handlePortfolio); // Alias Indonesia
+  bot.command('alert', handleAlert);
+  bot.command('predict', handlePredict);
+  bot.command('history', handleHistory);
+  bot.command('news', handleNews);
+  bot.command('alertnews', handleAlertNews);
+  bot.command('profile', handleProfile);
+  bot.command('info', handleInfo);
+  bot.command('kurs', handleKurs);
+  bot.command('delalert', handleDelAlert);
+  bot.command('listalerts', handleListAlerts);
+  bot.command('credits', handleCredits);
+  bot.command('flush', handleFlush);
+  bot.command('paper', handlePaperStatus);
+  bot.command('paperbuy', handlePaperBuy);
+  bot.command('papersell', handlePaperSell);
+  bot.command('solana', handleSolana);
+  bot.command('sentiment', handleSentiment);
+  bot.command('today', handleToday);
+  bot.command('smartmoney', handleSmartMoney);
+  bot.command('alertrsi', handleAlertRsi);
+  bot.command('watch', handleWatch);
+  bot.command('watchlist', handleWatchlist);
 
   // Callback query handling for menu
   bot.on('callback_query:data', async (ctx) => {
@@ -115,10 +143,14 @@ export function createBot(): Bot {
   bot.catch(errorHandler);
 
   // ── Bot commands menu (UI) ──────────────────────────────────────────────────
-  // We keep it minimal to encourage using the interactive dashboard
+  // Register commands for the Telegram autocomplete menu UI
   bot.api.setMyCommands([
     { command: 'start', description: '🏁 Open Dashboard Terminal' },
+    { command: 'menu', description: '📜 Main Menu' },
     { command: 'app', description: '🚀 Launch Mini App' },
+    { command: 'portfolio', description: '📁 View Assets Portfolio' },
+    { command: 'watchlist', description: '👁 View Watchlist' },
+    { command: 'help', description: '❓ Help Center' },
   ]).catch((err) => log.warn('Failed to set bot commands', { error: err.message }));
 
   // ── Set Menu Button to Default (Commands List) ──────────────────────────────
