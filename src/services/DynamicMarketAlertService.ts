@@ -89,7 +89,7 @@ export class DynamicMarketAlertService {
           alertTriggered = true;
           const direction = currentStep > lastStep ? 'NAIK melampaui' : 'TURUN di bawah';
           const level = currentStep > lastStep ? currentStep * threshold : lastStep * threshold;
-          reason = `Harga <b>${direction}</b> level psikologis <b>${formatPrice(level)}</b>`;
+          reason = `Harga <b>${direction}</b> level psikologis <b>${formatPrice(level, symbol)}</b>`;
           emoji = currentStep > lastStep ? '🔥' : '⚠️';
         }
       }
@@ -134,7 +134,7 @@ export class DynamicMarketAlertService {
       `<b>Status:</b> ${trendIcon} ${trendText}`,
       `<b>Info:</b> ${reason}`,
       `━━━━━━━━━━━━━━━━━━━━`,
-      `💰 Harga Saat Ini: <b>${formatPrice(price)}</b>`,
+      `💰 Harga Saat Ini: <b>${formatPrice(price, symbol)}</b>`,
       `📊 Perubahan 24h: <b>${formatPct(change24h)}</b>`,
       ``,
       `<i>Sent by AI Market Monitor</i>`
@@ -153,8 +153,8 @@ export class DynamicMarketAlertService {
           `🎯 <b>Portfolio Alert: ${symbol}</b>`,
           `━━━━━━━━━━━━━━━━━━━━`,
           `${trendIcon} ${reason}`,
-          `💰 Harga: <b>${formatPrice(price)}</b>`,
-          `📉 Prev: ${formatPrice(lastPrice)}`,
+          `💰 Harga: <b>${formatPrice(price, symbol)}</b>`,
+          `📉 Prev: ${formatPrice(lastPrice, symbol)}`,
           `━━━━━━━━━━━━━━━━━━━━`,
           `<i>Check your portfolio for details.</i>`
         ].join('\n');
@@ -165,5 +165,4 @@ export class DynamicMarketAlertService {
       }
     }
   }
-}
 }

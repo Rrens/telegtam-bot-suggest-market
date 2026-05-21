@@ -12,15 +12,15 @@ describe('Formatter Utils', () => {
 
   describe('formatPrice', () => {
     it('should format large prices correctly', () => {
-      expect(formatPrice(65000)).toBe('$65,000.00');
+      expect(formatPrice(65000)).toBe('$65,000.00 (Rp1.040.000.000)');
     });
 
     it('should format small prices with more decimals', () => {
-      expect(formatPrice(0.00012345)).toBe('$0.00012345');
+      expect(formatPrice(0.00012345)).toBe('$0.00012345 (Rp2)');
     });
 
     it('should format IDR prices correctly', () => {
-      expect(formatPrice(5200, 'IDR')).toBe('Rp5.200');
+      expect(formatPrice(5200, 'IDR')).toBe('Rp5.200 ($0.33)');
     });
   });
 

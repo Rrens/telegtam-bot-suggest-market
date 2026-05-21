@@ -71,6 +71,25 @@ export function formatSignal(signal: SignalResult): string {
   const macdIcon = macdBullish ? '↑' : '↓';
   const macdLabel = macdBullish ? 'Bullish' : 'Bearish';
 
+  const isIdr = signal.symbol.toUpperCase().endsWith('.JK') || signal.symbol.toUpperCase().endsWith('.ID');
+
+  const fmtVal = (val: number | null | undefined) => {
+    if (val == null) return 'N/A';
+    return isIdr
+      ? `Rp${Math.round(val).toLocaleString('id-ID')}`
+      : `$${val.toLocaleString('en-US')}`;
+  };
+
+  let priceLine1 = '';
+  let priceLine2 = '';
+  if (isIdr) {
+    priceLine1 = `Price:  Rp${Math.round(signal.price).toLocaleString('id-ID')}`;
+    priceLine2 = `        ($${(signal.price / rate).toFixed(2)})`;
+  } else {
+    priceLine1 = `Price:  $${signal.price.toLocaleString()}`;
+    priceLine2 = `        (Rp${Math.round(signal.price * rate).toLocaleString()})`;
+  }
+
   // 1. Header Section
   const header = [
     `📊 <b>${signal.symbol.toUpperCase()} Analysis</b>`,
@@ -80,8 +99,8 @@ export function formatSignal(signal: SignalResult): string {
 
   // 2. Data Section (Monospace Code Block)
   const dataLines = [
-    `Price:  $${signal.price.toLocaleString()}`,
-    `        (Rp${Math.round(signal.price * rate).toLocaleString()})`,
+    priceLine1,
+    priceLine2,
     '',
     `Trend:  ${trendEmoji} ${signal.trend}`,
     `Score:  ${score >= 0 ? '+' : ''}${score} | Bias: ${signal.tradeBias.toUpperCase()}`,
@@ -91,17 +110,17 @@ export function formatSignal(signal: SignalResult): string {
     '',
     `• RSI(14):    ${ind.rsi?.toFixed(1) ?? 'N/A'} (${getRsiLabel(ind.rsi ?? 50)})`,
     `• MACD:       ${macdIcon} ${macdLabel}`,
-    `• DEMA20:     $${ind.dema20?.toLocaleString() ?? 'N/A'}`,
-    `• DEMA50:     $${ind.ma50?.toLocaleString() ?? 'N/A'}`,
-    `• DEMA200:    $${ind.ma200?.toLocaleString() ?? 'N/A'}`,
-    `• SuperTrend: ${ind.superTrendDirection?.toUpperCase() ?? 'N/A'} ($${ind.superTrend?.toLocaleString() ?? 'N/A'})`,
+    `• DEMA20:     ${fmtVal(ind.dema20)}`,
+    `• DEMA50:     ${fmtVal(ind.ma50)}`,
+    `• DEMA200:    ${fmtVal(ind.ma200)}`,
+    `• SuperTrend: ${ind.superTrendDirection?.toUpperCase() ?? 'N/A'} (${fmtVal(ind.superTrend)})`,
     `• Bollinger:  ${ind.bbLower?.toFixed(0) ?? 'N/A'} - ${ind.bbUpper?.toFixed(0) ?? 'N/A'}`,
     '',
     '',
     '── RISK MANAGEMENT ──',
     '',
-    `• SL:   $${signal.stopLoss?.toLocaleString() ?? 'N/A'}`,
-    `• TP1:  $${signal.takeProfits?.[0]?.toLocaleString() ?? 'N/A'}`,
+    `• SL:   ${fmtVal(signal.stopLoss)}`,
+    `• TP1:  ${fmtVal(signal.takeProfits?.[0])}`,
     `• R/R:  ${signal.riskRewardRatio?.toFixed(2) ?? 'N/A'}`,
     `• Size: ${signal.positionSizeAdvice}`,
     '',

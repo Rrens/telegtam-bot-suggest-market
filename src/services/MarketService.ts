@@ -45,7 +45,7 @@ export class MarketService {
             ``,
             `${direction}: <b>${symbol}</b>`,
             `Trend: ${emoji} <b>${signal.trend}</b> (Conf: ${signal.confidence}%)`,
-            `Price: ${formatPrice(signal.price)}`,
+            `Price: ${formatPrice(signal.price, symbol)}`,
             ``,
             `<b>Technical Setup:</b>`,
             ...signal.reasoning.slice(0, 2).map(r => `• ${r}`),

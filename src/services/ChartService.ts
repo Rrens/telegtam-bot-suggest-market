@@ -102,7 +102,7 @@ export class ChartService {
       for (let i = 0; i <= yLines; i++) {
         const price = yMax - ((yMax - yMin) / yLines) * i;
         const y = PADDING.top + (PRICE_H / yLines) * i;
-        ctx.fillText(this.formatPrice(price), PADDING.left - 6, y + 4);
+        ctx.fillText(this.formatPrice(price, symbol), PADDING.left - 6, y + 4);
       }
       ctx.textAlign = 'left';
 
@@ -275,7 +275,12 @@ export class ChartService {
   }
 
   /** Format price for axis labels. */
-  private static formatPrice(price: number): string {
+  private static formatPrice(price: number, symbol = ''): string {
+    const isIdr = symbol.toUpperCase().endsWith('.JK') || symbol.toUpperCase().endsWith('.ID');
+    if (isIdr) {
+      if (price >= 1000) return `Rp${(price / 1000).toFixed(1)}k`;
+      return `Rp${price.toFixed(0)}`;
+    }
     if (price >= 10000) return `$${(price / 1000).toFixed(1)}k`;
     if (price >= 1000) return `$${price.toFixed(0)}`;
     if (price >= 1) return `$${price.toFixed(2)}`;

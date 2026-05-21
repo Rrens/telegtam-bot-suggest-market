@@ -41,10 +41,20 @@ export async function handlePortfolio(ctx: CommandContext<Context> | Context): P
       totalValueUsd += valUsd;
       totalPnLUsd += pnlUsd;
 
-      const cur = isIdr ? 'Rp' : '$';
+      const nativeVal = a.amount * price;
+      const nativePnL = a.amount * (price - a.avg_price);
+      
+      const fmtVal = isIdr 
+        ? `Rp${Math.round(nativeVal).toLocaleString('id-ID')}` 
+        : `$${nativeVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        
+      const fmtPnL = isIdr
+        ? `${nativePnL >= 0 ? '+' : '-'}Rp${Math.abs(Math.round(nativePnL)).toLocaleString('id-ID')}`
+        : `${nativePnL >= 0 ? '+' : '-'}$${Math.abs(nativePnL).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
       assetLines += `\n<b>${a.symbol}</b>\n`;
-      assetLines += `  Hold: ${a.amount} | Val: ${cur}${(a.amount * price).toLocaleString()}\n`;
-      assetLines += `  PnL: ${pnlUsd >= 0 ? '🟢' : '🔴'} ${cur}${(a.amount * (price - a.avg_price)).toLocaleString()}\n`;
+      assetLines += `  Hold: ${a.amount} | Val: ${fmtVal}\n`;
+      assetLines += `  PnL: ${pnlUsd >= 0 ? '🟢' : '🔴'} ${fmtPnL}\n`;
     }
 
     const message = [
