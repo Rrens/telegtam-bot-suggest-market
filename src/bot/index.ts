@@ -120,6 +120,254 @@ export function createBot(): Bot {
 
   bot.on('message:text', async (ctx, next) => {
     const text = ctx.message.text;
+
+    // Handle replies to force_reply prompts
+    if (ctx.message?.reply_to_message?.text) {
+      const replyText = ctx.message.reply_to_message.text;
+      const userId = String(ctx.from!.id);
+      
+      // 1. Price Target Alert (UP)
+      if (replyText.includes('Price Target Alert (UP)')) {
+        const args = text.trim().split(/\s+/);
+        const symbol = args[0].toUpperCase();
+        const targetPrice = parseFloat(args[1]);
+        if (!symbol || isNaN(targetPrice) || targetPrice <= 0) {
+          await ctx.reply('❌ Format salah. Ketik Simbol dan Harga Target.\nContoh: <code>BTCUSDT 75000</code>', { parse_mode: 'HTML' });
+          return;
+        }
+        const loadingMsg = await ctx.reply(`Validating <b>${symbol}</b>...`, { parse_mode: 'HTML' });
+        try {
+          const { PriceService } = await import('../services/PriceService.js');
+          const { AlertService } = await import('../services/AlertService.js');
+          const { formatPrice } = await import('../utils/formatter.js');
+          const priceData = await PriceService.getPrice(symbol);
+          await AlertService.createAlert(userId, symbol, 'price_target', 'gte', targetPrice);
+          await ctx.api.editMessageText(
+            ctx.chat!.id,
+            loadingMsg.message_id,
+            `✅ <b>Price Alert (UP) berhasil dibuat!</b>\n\n` +
+            `🔔 Aset: <b>${symbol}</b>\n` +
+            `🎯 Target: 🟢 <b>Melampaui (≥)</b> ${formatPrice(targetPrice, symbol)}\n` +
+            `💰 Harga sekarang: ${formatPrice(priceData.price, symbol)}`,
+            { parse_mode: 'HTML' }
+          );
+        } catch (err) {
+          await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, `❌ Gagal membuat alert. Pastikan simbol <b>${symbol}</b> valid.`, { parse_mode: 'HTML' });
+        }
+        return;
+      }
+
+      // 2. Price Target Alert (DOWN)
+      if (replyText.includes('Price Target Alert (DOWN)')) {
+        const args = text.trim().split(/\s+/);
+        const symbol = args[0].toUpperCase();
+        const targetPrice = parseFloat(args[1]);
+        if (!symbol || isNaN(targetPrice) || targetPrice <= 0) {
+          await ctx.reply('❌ Format salah. Ketik Simbol dan Harga Target.\nContoh: <code>BTCUSDT 60000</code>', { parse_mode: 'HTML' });
+          return;
+        }
+        const loadingMsg = await ctx.reply(`Validating <b>${symbol}</b>...`, { parse_mode: 'HTML' });
+        try {
+          const { PriceService } = await import('../services/PriceService.js');
+          const { AlertService } = await import('../services/AlertService.js');
+          const { formatPrice } = await import('../utils/formatter.js');
+          const priceData = await PriceService.getPrice(symbol);
+          await AlertService.createAlert(userId, symbol, 'price_target', 'lte', targetPrice);
+          await ctx.api.editMessageText(
+            ctx.chat!.id,
+            loadingMsg.message_id,
+            `✅ <b>Price Alert (DOWN) berhasil dibuat!</b>\n\n` +
+            `🔔 Aset: <b>${symbol}</b>\n` +
+            `🎯 Target: 🔴 <b>Turun di Bawah (≤)</b> ${formatPrice(targetPrice, symbol)}\n` +
+            `💰 Harga sekarang: ${formatPrice(priceData.price, symbol)}`,
+            { parse_mode: 'HTML' }
+          );
+        } catch (err) {
+          await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, `❌ Gagal membuat alert. Pastikan simbol <b>${symbol}</b> valid.`, { parse_mode: 'HTML' });
+        }
+        return;
+      }
+
+      // 3. Legacy Price Target Alert (fallback)
+      if (replyText.includes('Price Target Alert')) {
+        const args = text.trim().split(/\s+/);
+        const symbol = args[0].toUpperCase();
+        const targetPrice = parseFloat(args[1]);
+        if (!symbol || isNaN(targetPrice) || targetPrice <= 0) {
+          await ctx.reply('❌ Format salah. Ketik Simbol dan Harga Target.\nContoh: <code>BTCUSDT 75000</code>', { parse_mode: 'HTML' });
+          return;
+        }
+        const loadingMsg = await ctx.reply(`Validating <b>${symbol}</b>...`, { parse_mode: 'HTML' });
+        try {
+          const { PriceService } = await import('../services/PriceService.js');
+          const { AlertService } = await import('../services/AlertService.js');
+          const { formatPrice } = await import('../utils/formatter.js');
+          const priceData = await PriceService.getPrice(symbol);
+          const condition = targetPrice >= priceData.price ? 'gte' : 'lte';
+          await AlertService.createAlert(userId, symbol, 'price_target', condition, targetPrice);
+          const dirText = condition === 'gte' ? 'Melampaui (≥)' : 'Turun di Bawah (≤)';
+          const colorIcon = condition === 'gte' ? '🟢' : '🔴';
+          await ctx.api.editMessageText(
+            ctx.chat!.id,
+            loadingMsg.message_id,
+            `✅ <b>Price Alert berhasil dibuat!</b>\n\n` +
+            `🔔 Aset: <b>${symbol}</b>\n` +
+            `🎯 Target: ${colorIcon} <b>${dirText}</b> ${formatPrice(targetPrice, symbol)}\n` +
+            `💰 Harga sekarang: ${formatPrice(priceData.price, symbol)}`,
+            { parse_mode: 'HTML' }
+          );
+        } catch (err) {
+          await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, `❌ Gagal membuat alert. Pastikan simbol <b>${symbol}</b> valid.`, { parse_mode: 'HTML' });
+        }
+        return;
+      }
+
+      // 4. % Change Alert
+      if (replyText.includes('% Change Alert')) {
+        const args = text.trim().split(/\s+/);
+        const symbol = args[0].toUpperCase();
+        const targetPct = parseFloat(args[1]);
+        if (!symbol || isNaN(targetPct)) {
+          await ctx.reply('❌ Format salah. Ketik Simbol dan Persentase.\nContoh: <code>BTCUSDT 5</code>', { parse_mode: 'HTML' });
+          return;
+        }
+        const loadingMsg = await ctx.reply(`Validating <b>${symbol}</b>...`, { parse_mode: 'HTML' });
+        try {
+          const { PriceService } = await import('../services/PriceService.js');
+          const { AlertService } = await import('../services/AlertService.js');
+          const { formatPrice } = await import('../utils/formatter.js');
+          const priceData = await PriceService.getPrice(symbol);
+          const condition = targetPct >= 0 ? 'gte' : 'lte';
+          await AlertService.createAlert(userId, symbol, 'pct_change', condition, targetPct);
+          await ctx.api.editMessageText(
+            ctx.chat!.id,
+            loadingMsg.message_id,
+            `✅ <b>% Change Alert berhasil dibuat!</b>\n\n` +
+            `🔔 Aset: <b>${symbol}</b>\n` +
+            `🎯 Threshold: <b>${targetPct >= 0 ? '+' : ''}${targetPct}%</b> (alert saat perubahan 24j ${targetPct >= 0 ? '≥' : '≤'} ${targetPct}%)\n` +
+            `💰 Harga sekarang: ${formatPrice(priceData.price, symbol)}`,
+            { parse_mode: 'HTML' }
+          );
+        } catch (err) {
+          await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, `❌ Gagal membuat alert. Pastikan simbol <b>${symbol}</b> valid.`, { parse_mode: 'HTML' });
+        }
+        return;
+      }
+
+      // 5. Paper Buy
+      if (replyText.includes('Paper Buy')) {
+        (ctx as any).match = text;
+        const { handlePaperBuy } = await import('./commands/paper.js');
+        await handlePaperBuy(ctx as any);
+        return;
+      }
+
+      // 6. Paper Sell
+      if (replyText.includes('Paper Sell')) {
+        (ctx as any).match = text;
+        const { handlePaperSell } = await import('./commands/paper.js');
+        await handlePaperSell(ctx as any);
+        return;
+      }
+
+      // 7. RSI Alert Setup
+      if (replyText.includes('RSI Alert Setup')) {
+        const symbol = text.trim().toUpperCase();
+        if (!symbol) return;
+        const loadingMsg = await ctx.reply(`Setting up RSI alerts for <b>${symbol}</b>...`, { parse_mode: 'HTML' });
+        try {
+          const { PriceService } = await import('../services/PriceService.js');
+          await PriceService.getPrice(symbol);
+          const { db } = await import('../db/index.js');
+          await db('alerts').insert({
+            user_id: userId,
+            symbol,
+            alert_type: 'price_target',
+            condition: 'lte',
+            target_value: 30,
+            indicator: 'rsi',
+            timeframe: '1d',
+            active: true,
+          });
+          await db('alerts').insert({
+            user_id: userId,
+            symbol,
+            alert_type: 'price_target',
+            condition: 'gte',
+            target_value: 70,
+            indicator: 'rsi',
+            timeframe: '1d',
+            active: true,
+          });
+          await ctx.api.editMessageText(
+            ctx.chat!.id,
+            loadingMsg.message_id,
+            `✅ <b>RSI Alert berhasil dipasang!</b>\n\n` +
+            `📊 Aset: <b>${symbol}</b>\n` +
+            `🔔 Notifikasi akan dikirim saat Daily RSI ≤ 30 (Oversold) atau ≥ 70 (Overbought).`,
+            { parse_mode: 'HTML' }
+          );
+        } catch (err) {
+          await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, `❌ Gagal memasang RSI alert. Pastikan simbol <b>${symbol}</b> valid.`, { parse_mode: 'HTML' });
+        }
+        return;
+      }
+
+      // 8. MA Cross Setup
+      if (replyText.includes('MA Cross Setup')) {
+        const symbol = text.trim().toUpperCase();
+        if (!symbol) return;
+        const loadingMsg = await ctx.reply(`Setting up MA Cross alerts for <b>${symbol}</b>...`, { parse_mode: 'HTML' });
+        try {
+          const { PriceService } = await import('../services/PriceService.js');
+          await PriceService.getPrice(symbol);
+          const { db } = await import('../db/index.js');
+          await db('alerts').insert({
+            user_id: userId,
+            symbol,
+            alert_type: 'price_target',
+            condition: 'gte',
+            target_value: 0,
+            indicator: 'ma_cross',
+            timeframe: '1d',
+            active: true,
+          });
+          await ctx.api.editMessageText(
+            ctx.chat!.id,
+            loadingMsg.message_id,
+            `✅ <b>MA Cross Alert berhasil dipasang!</b>\n\n` +
+            `📊 Aset: <b>${symbol}</b>\n` +
+            `🔔 Notifikasi akan dikirim saat terjadi Golden Cross atau Death Cross (MA50 & MA200 Daily).`,
+            { parse_mode: 'HTML' }
+          );
+        } catch (err) {
+          await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, `❌ Gagal memasang MA Cross alert. Pastikan simbol <b>${symbol}</b> valid.`, { parse_mode: 'HTML' });
+        }
+        return;
+      }
+
+      // 9. Cancel Technical Alert
+      if (replyText.includes('Cancel Technical Alert')) {
+        const symbol = text.trim().toUpperCase();
+        if (!symbol) return;
+        try {
+          const { db } = await import('../db/index.js');
+          const count = await db('alerts')
+            .where({ user_id: userId, symbol, active: true })
+            .whereNotNull('indicator')
+            .update({ active: false });
+          if (count > 0) {
+            await ctx.reply(`✅ Berhasil menonaktifkan <b>${count}</b> technical alert untuk <b>${symbol}</b>.`, { parse_mode: 'HTML' });
+          } else {
+            await ctx.reply(`ℹ️ Tidak ditemukan technical alert aktif untuk <b>${symbol}</b>.`, { parse_mode: 'HTML' });
+          }
+        } catch (err) {
+          await ctx.reply('❌ Gagal membatalkan alert.');
+        }
+        return;
+      }
+    }
+
     if (text === '🚀 Launch Mini App') return handleApp(ctx as any);
     if (text === '📜 Main Menu') return handleMenu(ctx);
     
