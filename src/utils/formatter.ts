@@ -71,7 +71,7 @@ export function formatSignal(signal: SignalResult): string {
   const macdIcon = macdBullish ? '↑' : '↓';
   const macdLabel = macdBullish ? 'Bullish' : 'Bearish';
 
-  const isIdr = signal.symbol.toUpperCase().endsWith('.JK') || signal.symbol.toUpperCase().endsWith('.ID');
+  const isIdr = signal.symbol.toUpperCase().endsWith('.JK') || signal.symbol.toUpperCase().endsWith('.ID') || signal.symbol.toUpperCase() === 'LM';
 
   const fmtVal = (val: number | null | undefined) => {
     if (val == null) return 'N/A';

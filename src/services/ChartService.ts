@@ -276,7 +276,7 @@ export class ChartService {
 
   /** Format price for axis labels. */
   private static formatPrice(price: number, symbol = ''): string {
-    const isIdr = symbol.toUpperCase().endsWith('.JK') || symbol.toUpperCase().endsWith('.ID');
+    const isIdr = symbol.toUpperCase().endsWith('.JK') || symbol.toUpperCase().endsWith('.ID') || symbol.toUpperCase() === 'LM';
     if (isIdr) {
       if (price >= 1000) return `Rp${(price / 1000).toFixed(1)}k`;
       return `Rp${price.toFixed(0)}`;
@@ -303,6 +303,7 @@ export class ChartService {
     const commodityMap: Record<string, string> = {
       'XAUUSD': 'TVC:GOLD',
       'GOLD': 'TVC:GOLD',
+      'LM': 'COMEX:GC1!',
       'XAGUSD': 'TVC:SILVER',
       'SILVER': 'TVC:SILVER',
       'WTI': 'TVC:USOIL',
