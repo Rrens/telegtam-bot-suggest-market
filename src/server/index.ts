@@ -124,7 +124,7 @@ export function startWebServer() {
         const rate = PriceService.getLastUsdIdrRate() || 16000;
         try {
           const { price } = await PriceService.getPrice(a.symbol);
-          const isIdr = a.symbol.endsWith('.JK') || a.symbol.endsWith('.ID') || a.symbol === 'LM';
+          const isIdr = a.symbol.endsWith('.JK') || a.symbol.endsWith('.ID') || a.symbol === 'LM' || a.symbol === 'IDR';
           
           const usdPrice = isIdr ? price / rate : price;
           const usdAvgPrice = isIdr ? a.avg_price / rate : a.avg_price;
@@ -149,7 +149,7 @@ export function startWebServer() {
             type: isIdr ? 'stock' : 'crypto'
           };
         } catch (e) {
-          const isIdr = a.symbol.endsWith('.JK') || a.symbol.endsWith('.ID') || a.symbol === 'LM';
+          const isIdr = a.symbol.endsWith('.JK') || a.symbol.endsWith('.ID') || a.symbol === 'LM' || a.symbol === 'IDR';
           return {
             symbol: a.symbol,
             amount: isIdr ? Math.round(parseFloat(a.amount as any)) : parseFloat(a.amount as any),
@@ -185,7 +185,7 @@ export function startWebServer() {
         const { PriceService } = require('../services/PriceService');
         try {
           const { price, change24h } = await PriceService.getPrice(w.symbol);
-          const isIdr = w.symbol.endsWith('.JK') || w.symbol.endsWith('.ID') || w.symbol === 'LM';
+          const isIdr = w.symbol.endsWith('.JK') || w.symbol.endsWith('.ID') || w.symbol === 'LM' || w.symbol === 'IDR';
           return {
             symbol: w.symbol,
             type: w.asset_type,
@@ -195,7 +195,7 @@ export function startWebServer() {
             currency: isIdr ? 'Rp' : '$'
           };
         } catch {
-          const isIdr = w.symbol.endsWith('.JK') || w.symbol.endsWith('.ID') || w.symbol === 'LM';
+          const isIdr = w.symbol.endsWith('.JK') || w.symbol.endsWith('.ID') || w.symbol === 'LM' || w.symbol === 'IDR';
           return {
             symbol: w.symbol,
             type: w.asset_type,

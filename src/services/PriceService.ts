@@ -18,6 +18,12 @@ const axiosInstance = axios.create({
 });
 
 export class PriceService {
+  static readonly FIAT_CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'MYR', 'JPY', 'GBP', 'AUD'];
+
+  static isFiat(symbol: string): boolean {
+    return this.FIAT_CURRENCIES.includes(symbol.toUpperCase());
+  }
+
   /**
    * Detect asset type from symbol string.
    * Symbols ending in USDT/BTC/ETH → crypto
@@ -26,6 +32,7 @@ export class PriceService {
    */
   static detectAssetType(symbol: string): AssetType {
     const upper = symbol.toUpperCase();
+    if (this.isFiat(upper)) return 'forex';
     if (upper.endsWith('.JK')) return 'stock';
     if (
       upper.endsWith('USDT') ||
@@ -44,6 +51,18 @@ export class PriceService {
    */
   static async getPrice(symbol: string): Promise<PriceData> {
     const upperSymbol = symbol.toUpperCase();
+    
+    // Fiat currencies have a price of 1 relative to themselves
+    if (this.isFiat(upperSymbol)) {
+      return {
+        symbol: upperSymbol,
+        price: 1,
+        change24h: 0,
+        volume24h: 0,
+        timestamp: Date.now()
+      };
+    }
+
     if (upperSymbol === 'LM') {
       const cacheKeyEmas = 'price:lm_gram';
       const cachedEmas = await cacheGet<PriceData>(cacheKeyEmas);
