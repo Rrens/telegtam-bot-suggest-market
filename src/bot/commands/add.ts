@@ -58,7 +58,7 @@ export async function handleAdd(ctx: CommandContext<Context>): Promise<void> {
   try {
     const priceData = await PriceService.getPrice(symbol);
     const assetType: AssetType = PriceService.detectAssetType(symbol);
-    const currency = symbol.endsWith('.JK') ? 'IDR' : 'USD';
+    const currency = (symbol.endsWith('.JK') || symbol === 'LM') ? 'IDR' : 'USD';
 
     // Use provided price or default to current market price
     const avgPrice = rawPrice ? parseFloat(rawPrice) : priceData.price;

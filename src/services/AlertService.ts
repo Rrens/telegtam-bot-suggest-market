@@ -350,7 +350,7 @@ export class AlertService {
       const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
 
       // Currency handling: Convert everything to USD for totals
-      const currency = asset.symbol.toUpperCase().endsWith('.JK') ? 'IDR' : 'USD';
+      const currency = (asset.symbol.toUpperCase().endsWith('.JK') || asset.symbol.toUpperCase() === 'LM') ? 'IDR' : 'USD';
       if (currency === 'IDR') {
         const rate = PriceService.getLastUsdIdrRate();
         totalValue += value / rate;
