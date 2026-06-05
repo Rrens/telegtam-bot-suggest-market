@@ -23,7 +23,7 @@ export function formatPrice(price: number, symbolOrCurrency = 'USD'): string {
   const rate = PriceService.getLastUsdIdrRate();
   const symbol = symbolOrCurrency.toUpperCase();
   
-  const isIdr = symbol === 'IDR' || symbol.endsWith('.JK') || symbol.endsWith('.ID');
+  const isIdr = symbol === 'IDR' || symbol.endsWith('.JK') || symbol.endsWith('.ID') || symbol === 'LM';
   
   if (isIdr) {
     const rp = `Rp${price.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;

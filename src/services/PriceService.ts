@@ -43,6 +43,33 @@ export class PriceService {
    * Get current price data. Returns cached data if fresh.
    */
   static async getPrice(symbol: string): Promise<PriceData> {
+    const upperSymbol = symbol.toUpperCase();
+    if (upperSymbol === 'LM') {
+      const cacheKeyEmas = 'price:lm_gram';
+      const cachedEmas = await cacheGet<PriceData>(cacheKeyEmas);
+      if (cachedEmas) return cachedEmas;
+
+      const goldOunceData = await this.getPrice('GC=F');
+      const usdIdrRate = await this.getUsdIdrRate();
+
+      // 1 troy ounce = 31.1034768 grams
+      const pricePerGramUsd = goldOunceData.price / 31.1034768;
+      const pricePerGramIdr = pricePerGramUsd * usdIdrRate;
+
+      const emasData: PriceData = {
+        symbol: 'LM',
+        price: pricePerGramIdr,
+        change24h: goldOunceData.change24h,
+        volume24h: goldOunceData.volume24h,
+        high24h: goldOunceData.high24h ? (goldOunceData.high24h / 31.1034768) * usdIdrRate : undefined,
+        low24h: goldOunceData.low24h ? (goldOunceData.low24h / 31.1034768) * usdIdrRate : undefined,
+        timestamp: Date.now()
+      };
+
+      await cacheSet(cacheKeyEmas, emasData, TTL.PRICE_STOCK);
+      return emasData;
+    }
+
     const type = this.detectAssetType(symbol);
     const cacheKey = cacheKeys.price(symbol);
     const ttl = type === 'crypto' ? TTL.PRICE_CRYPTO : TTL.PRICE_STOCK;
@@ -316,6 +343,28 @@ export class PriceService {
    * @param limit  Number of candles (default 200)
    */
   static async getOHLCV(symbol: string, interval = '1d', limit = 200): Promise<OHLCVCandle[]> {
+    const upperSymbol = symbol.toUpperCase();
+    if (upperSymbol === 'LM') {
+      const cacheKeyEmas = `ohlcv:lm_gram:${interval}`;
+      const cachedEmas = await cacheGet<OHLCVCandle[]>(cacheKeyEmas);
+      if (cachedEmas && cachedEmas.length > 0) return cachedEmas;
+
+      const goldOunceCandles = await this.getOHLCV('GC=F', interval, limit);
+      const usdIdrRate = await this.getUsdIdrRate();
+
+      const emasCandles = goldOunceCandles.map((c) => ({
+        time: c.time,
+        open: (c.open / 31.1034768) * usdIdrRate,
+        high: (c.high / 31.1034768) * usdIdrRate,
+        low: (c.low / 31.1034768) * usdIdrRate,
+        close: (c.close / 31.1034768) * usdIdrRate,
+        volume: c.volume,
+      }));
+
+      await cacheSet(cacheKeyEmas, emasCandles, TTL.OHLCV);
+      return emasCandles;
+    }
+
     const type = this.detectAssetType(symbol);
     const cacheKey = cacheKeys.ohlcv(symbol, interval);
 

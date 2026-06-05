@@ -24,6 +24,8 @@ export async function handleHelp(ctx: CommandContext<Context> | Context): Promis
     `<b>📊 TECHNICAL ALERTS</b>`,
     `• <code>/alertrsi</code> - Setel alert otomatis (RSI Oversold/Bought atau MA Cross).`,
     `• <code>/alert &lt;symbol&gt; UP/DOWN &lt;price&gt;</code> - Alert target harga (contoh: <code>/alert BTCUSDT UP 75000</code>).`,
+    `• <code>/listalerts</code> - Lihat daftar alert harga aktif beserta ID-nya.`,
+    `• <code>/delalert &lt;id&gt;</code> - Hapus alert menggunakan ID-nya (contoh: <code>/delalert 2</code>).`,
     ``,
     `<b>📱 MINI APP & OTHERS</b>`,
     `• <code>/app</code> - Buka Dashboard Interaktif (Mini App) buat pengalaman lebih pro.`,
