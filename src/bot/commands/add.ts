@@ -33,12 +33,20 @@ export async function handleAdd(ctx: CommandContext<Context>): Promise<void> {
   }
 
   // Handle lot conversion
-  let isLot = false;
-  if (args.includes('lot')) {
-    isLot = true;
-    // Remove 'lot' from args to find rawPrice
-    const lotIdx = args.indexOf('lot');
-    if (lotIdx === 2 && args.length >= 4) rawPrice = args[3];
+  let isLot = args.includes('lot');
+
+  let parsedPrice: number | undefined;
+  let startIndex = isLot ? args.indexOf('lot') + 1 : 2;
+  for (let i = startIndex; i < args.length; i++) {
+    // Remove letters, $, and commas. Example: "IDR", "Rp3000000", "3,000,000"
+    const cleaned = args[i].replace(/[a-zA-Z$]/g, '').replace(/,/g, '');
+    if (cleaned.length > 0) {
+      const val = parseFloat(cleaned);
+      if (!isNaN(val)) {
+        parsedPrice = val;
+        break;
+      }
+    }
   }
 
   let amount = parseFloat(rawAmount);
@@ -62,7 +70,7 @@ export async function handleAdd(ctx: CommandContext<Context>): Promise<void> {
     const currency = isFiat ? symbol : ((symbol.endsWith('.JK') || symbol === 'LM') ? 'IDR' : 'USD');
 
     // Use provided price or default to current market price
-    const avgPrice = rawPrice ? parseFloat(rawPrice) : priceData.price;
+    const avgPrice = parsedPrice !== undefined ? parsedPrice : priceData.price;
 
     if (isNaN(avgPrice) || avgPrice <= 0) {
       await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, 'Invalid price. Please provide a positive number.', { parse_mode: 'HTML' });
