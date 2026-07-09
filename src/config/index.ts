@@ -77,5 +77,15 @@ export const config = {
     dailySummary: optional('FEATURE_DAILY_SUMMARY', 'true') === 'true',
     paperTrading: optional('FEATURE_PAPER_TRADING', 'true') === 'true',
     marketAlerts: optional('FEATURE_MARKET_ALERTS', 'true') === 'true',
+    serverMonitor: optional('FEATURE_SERVER_MONITOR', 'true') === 'true',
+  },
+  serverMonitor: {
+    host: optional('SERVER_MONITOR_HOST', ''),
+    cpuThreshold: parseInt(optional('SERVER_MONITOR_CPU_THRESHOLD', '80')),
+    ramThreshold: parseInt(optional('SERVER_MONITOR_RAM_THRESHOLD', '80')),
+    diskThreshold: parseInt(optional('SERVER_MONITOR_DISK_THRESHOLD', '85')),
+    cooldownMins: parseInt(optional('SERVER_MONITOR_COOLDOWN_MINS', '15')),
+    intervalMs: parseInt(optional('SERVER_MONITOR_INTERVAL_MS', '60000')),
   },
 };
+

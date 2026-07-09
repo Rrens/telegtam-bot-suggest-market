@@ -62,7 +62,7 @@ export async function handleInfo(ctx: CommandContext<Context>): Promise<void> {
     const totalMem = (os.totalmem() / (1024 ** 3)).toFixed(2);
     const freeMem = (os.freemem() / (1024 ** 3)).toFixed(2);
 
-    const message = [
+    const messageLines = [
       `🤖 <b>Bot Information</b>`,
       `Name: ${me.first_name}`,
       `Username: @${me.username}`,
@@ -87,7 +87,46 @@ export async function handleInfo(ctx: CommandContext<Context>): Promise<void> {
       `Memory: ${freeMem}GB / ${totalMem}GB free`,
       `Node.js: ${nodeVer}`,
       `OS: ${platform}`,
-    ].join('\n');
+    ];
+
+    const isAdmin = config.bot.adminId && ctx.from?.id.toString() === config.bot.adminId;
+    if (isAdmin) {
+      const { ServerMonitorService } = await import('../../services/ServerMonitorService.js');
+      const cpuUsage = await ServerMonitorService.getCpuUsage();
+      const diskUsage = await ServerMonitorService.getDiskUsage();
+      const ramUsage = Math.round(((os.totalmem() - os.freemem()) / os.totalmem()) * 100);
+      const topCpu = await ServerMonitorService.getTopProcesses('cpu');
+      const topMem = await ServerMonitorService.getTopProcesses('mem');
+
+      let cpuTable = 'N/A';
+      if (topCpu.length > 0) {
+        cpuTable = topCpu.map((p: any) => `<code>${p.pid.padEnd(7)}${p.cpu.padEnd(5)}${p.name}</code>`).join('\n');
+      }
+
+      let memTable = 'N/A';
+      if (topMem.length > 0) {
+        memTable = topMem.map((p: any) => `<code>${p.pid.padEnd(7)}${p.mem.padEnd(5)}${p.name}</code>`).join('\n');
+      }
+
+      messageLines.push(
+        ``,
+        `⚠️ <b>Admin Server Diagnostics</b>`,
+        `CPU Usage: <b>${cpuUsage}%</b>`,
+        `RAM Usage: <b>${ramUsage}%</b>`,
+        `Disk Usage: <b>${diskUsage}%</b>`,
+        ``,
+        `🔥 <b>Top 5 CPU Processes:</b>`,
+        `<code>PID    CPU% Name</code>`,
+        cpuTable,
+        ``,
+        `🧠 <b>Top 5 Memory Processes:</b>`,
+        `<code>PID    MEM% Name</code>`,
+        memTable
+      );
+    }
+
+    const message = messageLines.join('\n');
+
 
     await ctx.api.editMessageText(ctx.chat!.id, loadingMsg.message_id, message, { parse_mode: 'HTML' });
   } catch (err) {

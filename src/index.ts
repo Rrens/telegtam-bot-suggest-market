@@ -23,6 +23,7 @@ import { PriceService } from './services/PriceService';
 import { startMarketWorker } from './workers/marketWorker';
 import { startWebServer } from './server/index';
 import { startMarketAlertWorker } from './workers/marketAlertWorker';
+import { startServerMonitorWorker } from './workers/serverMonitorWorker';
 import { featureFlagService } from './services/FeatureFlagService';
 
 async function bootstrap(): Promise<void> {
@@ -63,6 +64,7 @@ async function bootstrap(): Promise<void> {
   if (await featureFlagService.isEnabled('dailySummary')) startDailySummaryWorker(bot);    // 📰 Daily AI market recap at 21:00 WIB
   if (await featureFlagService.isEnabled('paperTrading')) startPaperExecutionWorker(bot);  // 🎮 TP/SL/Trailing Stop execution
   if (await featureFlagService.isEnabled('marketAlerts')) startMarketAlertWorker(bot);     // 🚨 Auto-momentum alerts (5% or big thresholds)
+  if (await featureFlagService.isEnabled('serverMonitor')) startServerMonitorWorker(bot);   // ⚠️ System resource monitor and top processes alert
 
   // 4.5 Start Web Dashboard Server
   startWebServer();
